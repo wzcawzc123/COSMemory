@@ -74,3 +74,10 @@ body{
 .empty{color:var(--ink3); text-align:center; padding:26px 0; font-size:14px;}
 .alert{background:var(--red-bg); color:var(--red); border-radius:var(--radius-s);
   padding:16px; font-size:14px; text-align:center;}
+
+/* Solar sprite 图标(与显示增强模块同款) */
+.si{width:100%; height:100%; display:block; fill:currentColor;}
+.hero-ic .si{width:26px; height:26px; color:var(--ink);}
+.sec .b .si{width:15px; height:15px; color:var(--ink);}
+.tile .ic .si{width:20px; height:20px; color:var(--ink);}
+.sec .b{padding:0; overflow:hidden;}
