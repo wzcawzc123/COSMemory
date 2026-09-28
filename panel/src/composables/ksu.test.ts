@@ -40,3 +40,18 @@ describe('detectBridge', () => {
     delete g.ksu
   })
 })
+
+describe('execRead 管道成组(回归: || 短路bug)', () => {
+  it('命令含 || true 时整体被括号包裹', async () => {
+    const seen: string[] = []
+    const bridge = { exec: async (c: string) => { seen.push(c); return '' } }
+    await execRead(bridge, 'pgrep -f x 2>/dev/null || true')
+    expect(seen[0]).toBe('(pgrep -f x 2>/dev/null || true) | base64 | tr -d \'\\n\'')
+    expect(seen[0].startsWith('(')).toBe(true)
+  })
+  it('解码明文(短路漏网)时返回空而非乱码', async () => {
+    // 若实现退化为明文直出, b64utf8 失败应返回 ''
+    const bridge = { exec: async () => '13478\n2322' }
+    expect(await execRead(bridge, 'pgrep x || true')).toBe('')
+  })
+})

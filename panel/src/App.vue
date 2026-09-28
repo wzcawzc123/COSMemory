@@ -57,63 +57,92 @@ const capsEntries = computed(() => Object.entries(caps.value))
 
 onMounted(() => { refresh(); timer = window.setInterval(refresh, 5000) })
 onUnmounted(() => { if (timer) clearInterval(timer) })
+
 </script>
 
 <template>
-  <div class="nav">
-    <h1>COSMemory</h1>
-    <div class="sub">
-      <template v-if="engineUp === null">加载中…</template>
-      <template v-else-if="engineUp">引擎运行中 · 能力 {{ capsOk }}/6</template>
-      <template v-else>引擎未运行</template>
+  <div class="hd">
+    <div>
+      <h1>COSMemory</h1>
+      <div class="sub">
+        <template v-if="engineUp === null">连接中…</template>
+        <template v-else-if="engineUp">内存管理 · 引擎运行中</template>
+        <template v-else>内存管理 · 引擎未运行</template>
+      </div>
     </div>
+    <div class="dot" :class="engineUp ? 'on' : 'off'" />
   </div>
 
   <div class="wrap">
-    <div v-if="error" class="card"><div class="empty">{{ error }}</div></div>
+    <div v-if="error" class="alert">{{ error }}</div>
 
     <template v-else-if="stats">
-      <div class="grid">
-        <div class="stat"><div class="num">{{ stats.keepAdj }}</div><div class="cap">今日保活纠正</div></div>
-        <div class="stat"><div class="num">{{ stats.killed }}</div><div class="cap">今日回收</div></div>
-        <div class="stat"><div class="num">{{ white.filter(w => w.cchAdj === 200).length }}</div><div class="cap">白名单生效</div></div>
+      <!-- Hero: 引擎状态 -->
+      <div class="hero">
+        <div class="hero-top">
+          <div class="hero-ic">🧠</div>
+          <div class="hero-tt">
+            <div class="t">引擎状态</div>
+            <div class="s">ColorOS 16 · 基于 A1Memory 二次开发</div>
+          </div>
+          <span class="tag" :class="engineUp ? '' : 'off'">
+            {{ engineUp ? '运行中' : '已停止' }}
+          </span>
+        </div>
+        <div class="hero-sep" />
+        <div class="hero-pills">
+          <div class="hp"><div class="n">{{ stats.keepAdj }}</div><div class="l">今日保活</div></div>
+          <div class="hp"><div class="n">{{ stats.killed }}</div><div class="l">今日回收</div></div>
+          <div class="hp"><div class="n">{{ capsOk }}/6</div><div class="l">能力探测</div></div>
+        </div>
       </div>
 
+      <!-- 白名单 -->
+      <div class="sec"><div class="b">🌸</div><h2>白名单状态</h2></div>
       <div class="card">
-        <h2>白名单状态</h2>
         <div v-if="!white.length" class="empty">名单为空</div>
         <div v-for="w in white" :key="w.pkg" class="row">
           <div>
             <div class="name">{{ w.pkg }}</div>
             <div class="meta">{{ w.states.join(' · ') || '不在快照' }}</div>
           </div>
-          <span class="badge" :class="{ off: w.cchAdj !== null && w.cchAdj !== 200, warn: w.cchAdj === null }">
-            {{ w.cchAdj === null ? '服务态' : 'adj ' + w.cchAdj }}
+          <span class="pill" :class="w.cchAdj === 200 ? 'ok' : (w.cchAdj === null ? '' : 'bad')">
+            {{ w.cchAdj === null ? '系统托管' : 'adj ' + w.cchAdj }}
           </span>
         </div>
       </div>
 
-      <div class="card">
-        <h2>能力探测</h2>
-        <div v-for="[k, v] in capsEntries" :key="k" class="row">
-          <div class="name">{{ MODE[k] ?? CAP_LABELS[k] ?? k }}</div>
-          <span class="badge" :class="{ off: v !== 1 }">{{ v === 1 ? '支持' : '不支持' }}</span>
+      <!-- 能力探测: 2x2 方块 -->
+      <div class="sec"><div class="b">🧩</div><h2>能力探测</h2></div>
+      <div class="grid">
+        <div v-for="[k, v] in capsEntries" :key="k" class="tile">
+          <div class="th">
+            <span class="pill" :class="v === 1 ? 'ok' : 'bad'">{{ v === 1 ? '支持' : '不支持' }}</span>
+          </div>
+          <div class="ic">{{ v === 1 ? '✓' : '✕' }}</div>
+          <div class="t">{{ MODE[k] ?? CAP_LABELS[k] ?? k }}</div>
         </div>
-        <div v-if="!capsEntries.length" class="empty">caps.conf 未生成（引擎未启动过）</div>
+        <div v-if="!capsEntries.length" class="tile">
+          <div class="ic">…</div>
+          <div class="t">等待引擎</div>
+          <div class="s">caps.conf 未生成</div>
+        </div>
       </div>
 
+      <!-- 异常 -->
+      <div class="sec"><div class="b">⚠️</div><h2>异常监控</h2></div>
       <div class="card">
-        <h2>异常</h2>
         <div class="row"><div class="name">哨兵停机</div>
-          <span class="badge" :class="{ off: stats.sentinelHalt > 0 }">{{ stats.sentinelHalt }}</span></div>
+          <span class="pill" :class="stats.sentinelHalt > 0 ? 'bad' : 'ok'">{{ stats.sentinelHalt }}</span></div>
         <div class="row"><div class="name">看门狗重启</div>
-          <span class="badge" :class="{ off: stats.watchdogRestarts > 0 }">{{ stats.watchdogRestarts }}</span></div>
+          <span class="pill" :class="stats.watchdogRestarts > 0 ? 'warn' : 'ok'">{{ stats.watchdogRestarts }}</span></div>
         <div class="row"><div class="name">名单非法行</div>
-          <span class="badge" :class="{ off: stats.listBad > 0 }">{{ stats.listBad }}</span></div>
+          <span class="pill" :class="stats.listBad > 0 ? 'warn' : 'ok'">{{ stats.listBad }}</span></div>
       </div>
 
-      <div class="card">
-        <h2>引擎日志</h2>
+      <!-- 日志 -->
+      <div class="sec"><div class="b">📜</div><h2>引擎日志</h2></div>
+      <div class="logbox">
         <div v-if="!logTail.length" class="empty">暂无日志</div>
         <div v-for="(l, i) in logTail" :key="i" class="logline"
           :class="{ bad: /SENTINEL|WATCHDOG|halt/.test(l) }">{{ l }}</div>
