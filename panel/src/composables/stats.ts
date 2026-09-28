@@ -46,12 +46,12 @@ export const CAP_LABELS: Record<string, string> = {
   CAP_PSI: '内存压力 (PSI)', CAP_ADJ: 'adj 写入',
   CAP_LMKD_CFG: 'lmkd 调参入口', CAP_OPLUS: 'Oplus 扩展',
 }
-export interface WhiteEntry { pkg: string; adj: number | null; states: string[] }
+export interface WhiteEntry { pkg: string; adj: number | null; cchAdj: number | null; states: string[] }
 /** 行格式 state|adj|pkg (面板端 shell 聚合) + WHITE 名单 → 每个白名单包一条 */
 export function whiteStatus(rows: string, white: string): WhiteEntry[] {
   const list = white.split(/\s+/).filter(Boolean)
   const map = new Map<string, WhiteEntry>()
-  for (const w of list) map.set(w, { pkg: w, adj: null, states: [] })
+  for (const w of list) map.set(w, { pkg: w, adj: null, cchAdj: null, states: [] })
   for (const line of rows.split('\n')) {
     const [state, adjStr, pkg] = line.split('|')
     if (!pkg) continue
@@ -60,6 +60,8 @@ export function whiteStatus(rows: string, white: string): WhiteEntry[] {
     const e = map.get(key)!
     const a = Number(adjStr)
     if (Number.isFinite(a)) e.adj = e.adj == null ? a : Math.min(e.adj, a)
+    if (Number.isFinite(a) && state.startsWith('cch'))
+      e.cchAdj = e.cchAdj == null ? a : Math.min(e.cchAdj, a)
     if (state && !e.states.includes(state)) e.states.push(state)
   }
   return [...map.values()]

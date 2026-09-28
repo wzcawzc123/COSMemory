@@ -54,14 +54,17 @@ describe('whiteStatus', () => {
     const mm = w.find(e => e.pkg === 'com.tencent.mm')!
     expect(mm.adj).toBe(0)
     expect(mm.states).toEqual(['cch', 'svc', 'fg'])
-    expect(w.find(e => e.pkg === 'com.tencent.mobileqq')!.adj).toBe(925)
+    expect(mm.cchAdj).toBe(905)   // 缓存态最小adj(引擎管的那类); fg=0不计入
+    const qq = w.find(e => e.pkg === 'com.tencent.mobileqq')!
+    expect(qq.adj).toBe(925)
+    expect(qq.cchAdj).toBe(925)
   })
   it('名单内但快照没有 → 占位保留', () => {
-    expect(whiteStatus('', 'com.a')).toEqual([{ pkg: 'com.a', adj: null, states: [] }])
+    expect(whiteStatus('', 'com.a')).toEqual([{ pkg: 'com.a', adj: null, cchAdj: null, states: [] }])
   })
   it('WHITE带冒号只精确匹配', () => {
     const w = whiteStatus('cch|10|com.a:sub', 'com.a:sub com.b')
-    expect(w[0].adj).toBe(10)
-    expect(w[1].adj).toBeNull()
+    expect(w[0].cchAdj).toBe(10)
+    expect(w[1].cchAdj).toBeNull()
   })
 })

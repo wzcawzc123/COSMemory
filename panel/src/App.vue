@@ -24,12 +24,13 @@ async function refresh() {
   const b = bridge.value
   if (!b) { error.value = '未检测到 KSU 桥（请在 KernelSU 管理器中打开）'; return }
   try {
-    const [log, capsTxt, listTxt, parsed, procs] = await Promise.all([
+    const [log, capsTxt, listTxt, parsed, procs, livePid] = await Promise.all([
       execRead(b, `tail -100 ${MOD}/data/stats.log 2>/dev/null`),
       execRead(b, `cat ${MOD}/data/caps.conf 2>/dev/null`),
       execRead(b, `cat "${LIST}" 2>/dev/null`),
       execRead(b, `cat ${MOD}/data/parsed.txt 2>/dev/null`),
-      execRead(b, `for d in /proc/[0-9]*; do c=$(tr '\\0' ' ' < $d/cmdline 2>/dev/null); case "$c" in *tencent.mm*|*tencent.mobileqq*|*ugc.aweme*) echo "$(cat $d/oom_score_adj 2>/dev/null)|$c";; esac; done`),
+      execRead(b, 'for d in /proc/[0-9]*; do c=$(tr "\\0" " " < $d/cmdline 2>/dev/null); p=${c%% *}; case "$p" in com.*|cn.*|net.*|org.*|tv.*|io.*|me.*|android.*) echo "$(cat $d/oom_score_adj 2>/dev/null)|$p";; esac; done'),
+      execRead(b, 'pgrep -f engine/memory.sh 2>/dev/null || true'),
     ])
     stats.value = parseStats(log)
     caps.value = parseCaps(capsTxt)
@@ -46,7 +47,7 @@ async function refresh() {
     })
     white.value = whiteStatus(rows.join('\n'), wl)
     logTail.value = log.split('\n').filter(Boolean).slice(-50).reverse()
-    engineUp.value = stats.value.engineStarted
+    engineUp.value = livePid.trim().length > 0
     error.value = ''
   } catch (e) { error.value = String(e) }
 }
@@ -75,7 +76,7 @@ onUnmounted(() => { if (timer) clearInterval(timer) })
       <div class="grid">
         <div class="stat"><div class="num">{{ stats.keepAdj }}</div><div class="cap">今日保活纠正</div></div>
         <div class="stat"><div class="num">{{ stats.killed }}</div><div class="cap">今日回收</div></div>
-        <div class="stat"><div class="num">{{ white.filter(w => w.adj === 200).length }}</div><div class="cap">白名单生效</div></div>
+        <div class="stat"><div class="num">{{ white.filter(w => w.cchAdj === 200).length }}</div><div class="cap">白名单生效</div></div>
       </div>
 
       <div class="card">
@@ -86,8 +87,8 @@ onUnmounted(() => { if (timer) clearInterval(timer) })
             <div class="name">{{ w.pkg }}</div>
             <div class="meta">{{ w.states.join(' · ') || '不在快照' }}</div>
           </div>
-          <span class="badge" :class="{ off: w.adj !== 200, warn: w.adj == null }">
-            {{ w.adj == null ? '?' : 'adj ' + w.adj }}
+          <span class="badge" :class="{ off: w.cchAdj !== null && w.cchAdj !== 200, warn: w.cchAdj === null }">
+            {{ w.cchAdj === null ? '服务态' : 'adj ' + w.cchAdj }}
           </span>
         </div>
       </div>
