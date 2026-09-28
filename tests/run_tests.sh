@@ -1,4 +1,5 @@
 #!/system/bin/sh
+# tests/run_tests.sh — 极简断言框架, 被各 test_*.sh source
 PASS=0; FAIL=0
 t_assert() {
   if [ "$2" = "$3" ]; then PASS=$((PASS+1)); echo "  ok: $1"

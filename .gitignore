@@ -1,5 +1,8 @@
-panel/node_modules/
-panel/dist/
-data/stats.log
-data/acts
-data/guard/
+__pycache__
+/.vscode
+/.cache
+/build
+/.DS_Store
+data/
+*.pid
+*.zip
