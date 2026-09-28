@@ -6,3 +6,5 @@ __pycache__
 data/
 *.pid
 *.zip
+node_modules/
+dist/
