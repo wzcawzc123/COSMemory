@@ -29,8 +29,7 @@ export function b64utf8(b64: string): string {
 }
 
 export async function execRead(bridge: KsuBridge, cmd: string): Promise<string> {
-  // 成组再管道: 避免 `cmd || true | base64` 的 || 短路导致明文直出
-  const out = await bridge.exec("(" + cmd + ") | base64 | tr -d '\\n'")
+  const out = await bridge.exec(cmd + " | base64 | tr -d '\\n'")
   if (!out.trim()) return ''
   try { return b64utf8(out) } catch { return '' }
 }

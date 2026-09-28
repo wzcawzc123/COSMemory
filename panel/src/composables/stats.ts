@@ -1,11 +1,11 @@
 // stats.ts — 解析引擎输出为面板数据 (纯函数, 可测)
 export interface DayStats {
-  keepAdj: number; killed: number; skipped: number; deaths: number; skips: Record<string, number>
+  keepAdj: number; killed: number; skips: Record<string, number>
   sentinelHalt: number; watchdogRestarts: number; listBad: number
   engineStarted: boolean; lastLine: string
 }
 export function emptyStats(): DayStats {
-  return { keepAdj: 0, killed: 0, skipped: 0, deaths: 0, skips: {}, sentinelHalt: 0,
+  return { keepAdj: 0, killed: 0, skips: {}, sentinelHalt: 0,
            watchdogRestarts: 0, listBad: 0, engineStarted: false, lastLine: '' }
 }
 const TS = /^\[(\d{4}-\d{2}-\d{2}) /
@@ -19,7 +19,6 @@ export function parseStats(log: string, day = ''): DayStats {
     if (m) {
       if (m[1] !== want) continue
       if (line.includes('KEEPADJ ')) s.keepAdj++
-      else if (line.includes('DEATH ')) s.deaths++
       else if (line.includes('SENTINEL HALT')) s.sentinelHalt++
       else if (line.includes('WATCHDOG restart')) s.watchdogRestarts++
       else if (line.includes('LIST_BAD')) s.listBad++
@@ -28,8 +27,6 @@ export function parseStats(log: string, day = ''): DayStats {
     } else {
       const k = line.match(/KILLED=(\d+)/)
       if (k) s.killed += Number(k[1])
-      const sk2 = line.match(/SKIPPED=(\d+)/)
-      if (sk2) s.skipped += Number(sk2[1])
       const sk = line.match(/^SKIP (\S+)/)
       if (sk) s.skips[sk[1]] = (s.skips[sk[1]] ?? 0) + 1
     }
@@ -49,12 +46,12 @@ export const CAP_LABELS: Record<string, string> = {
   CAP_PSI: '内存压力 (PSI)', CAP_ADJ: 'adj 写入',
   CAP_LMKD_CFG: 'lmkd 调参入口', CAP_OPLUS: 'Oplus 扩展',
 }
-export interface WhiteEntry { pkg: string; adj: number | null; cchAdj: number | null; states: string[] }
+export interface WhiteEntry { pkg: string; adj: number | null; states: string[] }
 /** 行格式 state|adj|pkg (面板端 shell 聚合) + WHITE 名单 → 每个白名单包一条 */
 export function whiteStatus(rows: string, white: string): WhiteEntry[] {
   const list = white.split(/\s+/).filter(Boolean)
   const map = new Map<string, WhiteEntry>()
-  for (const w of list) map.set(w, { pkg: w, adj: null, cchAdj: null, states: [] })
+  for (const w of list) map.set(w, { pkg: w, adj: null, states: [] })
   for (const line of rows.split('\n')) {
     const [state, adjStr, pkg] = line.split('|')
     if (!pkg) continue
@@ -63,8 +60,6 @@ export function whiteStatus(rows: string, white: string): WhiteEntry[] {
     const e = map.get(key)!
     const a = Number(adjStr)
     if (Number.isFinite(a)) e.adj = e.adj == null ? a : Math.min(e.adj, a)
-    if (Number.isFinite(a) && state.startsWith('cch'))
-      e.cchAdj = e.cchAdj == null ? a : Math.min(e.cchAdj, a)
     if (state && !e.states.includes(state)) e.states.push(state)
   }
   return [...map.values()]

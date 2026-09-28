@@ -2,13 +2,6 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { detectBridge, execRead, type KsuBridge } from './composables/ksu'
 import { parseStats, parseCaps, whiteStatus, CAP_LABELS, type DayStats } from './composables/stats'
-import { parseGuard, guardDate, type GuardStats } from './composables/guard'
-import { initTheme } from './composables/theme'
-import DashboardView from './views/DashboardView.vue'
-import DefenseView from './views/DefenseView.vue'
-import SystemView from './views/SystemView.vue'
-import ListView from './views/ListView.vue'
-import SettingsView from './views/SettingsView.vue'
 
 const MOD = '/data/adb/modules/COSMemory'
 const LIST = '/sdcard/Android/COSMemory/名单列表.conf'
@@ -20,11 +13,6 @@ const white = ref<{ pkg: string; adj: number | null; states: string[] }[]>([])
 const logTail = ref<string[]>([])
 const engineUp = ref<boolean | null>(null)
 const error = ref('')
-const guard = ref<GuardStats | null>(null)
-const listRaw = ref('')
-type Tab = 'dash' | 'defense' | 'system' | 'list' | 'set'
-const activeTab = ref<Tab>('dash')
-function goTab(id: Tab) { activeTab.value = id; window.scrollTo({ top: 0 }) }
 let timer: number | undefined
 
 const MODE: Record<string, string> = {
@@ -32,132 +20,103 @@ const MODE: Record<string, string> = {
   CAP_ADJ: 'adj 写入', CAP_LMKD_CFG: 'lmkd 调参', CAP_OPLUS: 'Oplus 扩展',
 }
 
-// 能力 → Solar sprite 图标(与显示增强模块同款组件包)
-const CAP_ICON: Record<string, string> = {
-  CAP_LRU: 'i-apps-2-fill', CAP_LRU_FALLBACK: 'i-stack-fill', CAP_PSI: 'i-dashboard-2-fill',
-  CAP_ADJ: 'i-tools-fill', CAP_LMKD_CFG: 'i-cpu-fill', CAP_OPLUS: 'i-smartphone-fill',
-}
-
 async function refresh() {
   const b = bridge.value
   if (!b) { error.value = '未检测到 KSU 桥（请在 KernelSU 管理器中打开）'; return }
   try {
-    // 阶段1: 全部小文件 + pgrep (总耗时 ≤25ms; 不再遍历 /proc)
-    const [log, capsTxt, listTxt, parsed, livePid, guardTxt] = await Promise.all([
+    const [log, capsTxt, listTxt, parsed, procs] = await Promise.all([
       execRead(b, `tail -100 ${MOD}/data/stats.log 2>/dev/null`),
       execRead(b, `cat ${MOD}/data/caps.conf 2>/dev/null`),
       execRead(b, `cat "${LIST}" 2>/dev/null`),
       execRead(b, `cat ${MOD}/data/parsed.txt 2>/dev/null`),
-      execRead(b, 'pgrep -f engine/memory.sh 2>/dev/null || true'),
-      execRead(b, `sh ${MOD}/engine/guard_stats.sh ${guardDate.value || ''}`).catch(() => ''),
+      execRead(b, `for d in /proc/[0-9]*; do c=$(tr '\\0' ' ' < $d/cmdline 2>/dev/null); case "$c" in *tencent.mm*|*tencent.mobileqq*|*ugc.aweme*) echo "$(cat $d/oom_score_adj 2>/dev/null)|$c";; esac; done`),
     ])
     stats.value = parseStats(log)
-    guard.value = parseGuard(guardTxt)
     caps.value = parseCaps(capsTxt)
     const wl = listTxt.split('\n').filter(l => l.startsWith('WHITE ')).map(l => l.slice(6).trim()).join(' ')
-    listRaw.value = listTxt
-
-    // 解析引擎快照 → pid 信息表 (state|proc|pid|pkg)
-    const pidInfo = new Map<string, { state: string; pkg: string }>()
     const stateMap = new Map<string, string>()
     for (const l of parsed.split('\n')) {
-      const [st, , pid, pkg] = l.split('|')
-      if (!pkg || !pid) continue
-      stateMap.set(pkg, st)
-      pidInfo.set(pid, { state: st, pkg })
+      const [st, , , pkg] = l.split('|'); if (pkg) stateMap.set(pkg, st)
     }
-
-    // 阶段2: 只读白名单命中的 pid 的实时 adj (5~10个, ~15ms)
-    const wlArr = wl.split(/\s+/).filter(Boolean)
-    const wantPids = [...pidInfo.entries()]
-      .filter(([, v]) => wlArr.some(w => v.pkg === w || (!w.includes(':') && v.pkg.startsWith(w + ':'))))
-      .map(([pid]) => pid)
-    let adjOut = ''
-    if (wantPids.length) {
-      adjOut = await execRead(b,
-        `for p in ${wantPids.join(' ')}; do echo "$p $(cat /proc/$p/oom_score_adj 2>/dev/null)"; done`)
-    }
-
-    // 拼成 whiteStatus 需要的 state|adj|pkg 行
-    const rows: string[] = []
-    for (const line of adjOut.split('\n')) {
-      const [pid, adj] = line.trim().split(/\s+/)
-      const info = pidInfo.get(pid)
-      if (info && adj) rows.push(`${info.state}|${adj}|${info.pkg}`)
-    }
+    const rows = procs.split('\n').filter(Boolean).map(l => {
+      const i = l.indexOf('|')
+      const adj = l.slice(0, i), cmd = l.slice(i + 1).trim()
+      const pkg = cmd.split(/\s+/)[0]
+      return `${stateMap.get(pkg) ?? ''}|${adj}|${pkg}`
+    })
     white.value = whiteStatus(rows.join('\n'), wl)
     logTail.value = log.split('\n').filter(Boolean).slice(-50).reverse()
-    engineUp.value = livePid.trim().length > 0
+    engineUp.value = stats.value.engineStarted
     error.value = ''
   } catch (e) { error.value = String(e) }
 }
 
-const TABS: { id: Tab; label: string; icon: string }[] = [
-  { id: 'dash', label: '总览', icon: 'i-dashboard-2-fill' },
-  { id: 'defense', label: '防线', icon: 'i-lock-unlock-fill' },
-  { id: 'system', label: '系统', icon: 'i-cpu-fill' },
-  { id: 'list', label: '名单', icon: 'i-user-smile-fill' },
-  { id: 'set', label: '设置', icon: 'i-tools-fill' },
-]
-
 const capsOk = computed(() => Object.values(caps.value).filter(v => v === 1).length)
 const capsEntries = computed(() => Object.entries(caps.value))
 
-/** 设置页模式开关: 写 memory.json mode → 30s 桥自动生效(热加载) */
-async function setGuardMode(toGuard: boolean) {
-  const b = bridge.value
-  if (!b) { error.value = '无 KSU 桥'; return }
-  const target = toGuard ? 'guard' : 'observe'
-  try {
-    await execRead(b, `sed -i 's/"mode": *"[a-z]*"/"mode": "${target}"/' ${MOD}/config/memory.json`)
-    const back = await execRead(b, `grep -o '"mode": "[a-z]*"' ${MOD}/config/memory.json`)
-    if (back.includes(target)) {
-      if (guard.value) guard.value = { ...guard.value, mode: target }
-      error.value = ''
-      alert(`已切换为 ${target}，30 秒内经配置桥生效`)
-    } else error.value = '模式切换失败: ' + (back.trim() || '空回读')
-  } catch (e) { error.value = String(e) }
-}
-
-onMounted(() => { initTheme(); refresh(); timer = window.setInterval(refresh, 5000) })
+onMounted(() => { refresh(); timer = window.setInterval(refresh, 5000) })
 onUnmounted(() => { if (timer) clearInterval(timer) })
-
 </script>
 
 <template>
-  <div class="hd">
-    <div>
-      <h1>COSMemory</h1>
-      <div class="sub">
-        <template v-if="engineUp === null">连接中…</template>
-        <template v-else-if="engineUp">内存管理 · 引擎运行中</template>
-        <template v-else>内存管理 · 引擎未运行</template>
-      </div>
+  <div class="nav">
+    <h1>COSMemory</h1>
+    <div class="sub">
+      <template v-if="engineUp === null">加载中…</template>
+      <template v-else-if="engineUp">引擎运行中 · 能力 {{ capsOk }}/6</template>
+      <template v-else>引擎未运行</template>
     </div>
-    <div class="dot" :class="engineUp ? 'on' : 'off'" />
   </div>
 
   <div class="wrap">
-    <div v-if="error" class="alert" :class="{ ok: error.includes('已切换') }">{{ error }}</div>
+    <div v-if="error" class="card"><div class="empty">{{ error }}</div></div>
 
-    <DashboardView v-if="activeTab === 'dash'"
-      :stats="stats" :engine-up="engineUp" :caps-ok="capsOk" :white="white" :guard="guard" />
-    <DefenseView v-else-if="activeTab === 'defense'"
-      :guard="guard" @pick="(d) => { guardDate.value = d; refresh(); }" />
-    <SystemView v-else-if="activeTab === 'system'"
-      :stats="stats" :caps-entries="capsEntries" />
-    <ListView v-else-if="activeTab === 'list'"
-      :white="white" :list-raw="listRaw" />
-    <SettingsView v-else
-      :log-tail="logTail" :guard="guard" @set-guard-mode="setGuardMode" />
+    <template v-else-if="stats">
+      <div class="grid">
+        <div class="stat"><div class="num">{{ stats.keepAdj }}</div><div class="cap">今日保活纠正</div></div>
+        <div class="stat"><div class="num">{{ stats.killed }}</div><div class="cap">今日回收</div></div>
+        <div class="stat"><div class="num">{{ white.filter(w => w.adj === 200).length }}</div><div class="cap">白名单生效</div></div>
+      </div>
+
+      <div class="card">
+        <h2>白名单状态</h2>
+        <div v-if="!white.length" class="empty">名单为空</div>
+        <div v-for="w in white" :key="w.pkg" class="row">
+          <div>
+            <div class="name">{{ w.pkg }}</div>
+            <div class="meta">{{ w.states.join(' · ') || '不在快照' }}</div>
+          </div>
+          <span class="badge" :class="{ off: w.adj !== 200, warn: w.adj == null }">
+            {{ w.adj == null ? '?' : 'adj ' + w.adj }}
+          </span>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>能力探测</h2>
+        <div v-for="[k, v] in capsEntries" :key="k" class="row">
+          <div class="name">{{ MODE[k] ?? CAP_LABELS[k] ?? k }}</div>
+          <span class="badge" :class="{ off: v !== 1 }">{{ v === 1 ? '支持' : '不支持' }}</span>
+        </div>
+        <div v-if="!capsEntries.length" class="empty">caps.conf 未生成（引擎未启动过）</div>
+      </div>
+
+      <div class="card">
+        <h2>异常</h2>
+        <div class="row"><div class="name">哨兵停机</div>
+          <span class="badge" :class="{ off: stats.sentinelHalt > 0 }">{{ stats.sentinelHalt }}</span></div>
+        <div class="row"><div class="name">看门狗重启</div>
+          <span class="badge" :class="{ off: stats.watchdogRestarts > 0 }">{{ stats.watchdogRestarts }}</span></div>
+        <div class="row"><div class="name">名单非法行</div>
+          <span class="badge" :class="{ off: stats.listBad > 0 }">{{ stats.listBad }}</span></div>
+      </div>
+
+      <div class="card">
+        <h2>引擎日志</h2>
+        <div v-if="!logTail.length" class="empty">暂无日志</div>
+        <div v-for="(l, i) in logTail" :key="i" class="logline"
+          :class="{ bad: /SENTINEL|WATCHDOG|halt/.test(l) }">{{ l }}</div>
+      </div>
+    </template>
   </div>
-
-  <!-- 底部导航 5 键 -->
-  <nav class="tabbar">
-    <button v-for="t in TABS" :key="t.id" :class="{ on: activeTab === t.id }"
-      @click="goTab(t.id)">
-      <svg class="si" viewBox="0 0 24 24"><use :href="'#' + t.icon" /></svg>
-      <span>{{ t.label }}</span>
-    </button>
-  </nav>
 </template>

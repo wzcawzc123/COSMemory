@@ -54,32 +54,14 @@ describe('whiteStatus', () => {
     const mm = w.find(e => e.pkg === 'com.tencent.mm')!
     expect(mm.adj).toBe(0)
     expect(mm.states).toEqual(['cch', 'svc', 'fg'])
-    expect(mm.cchAdj).toBe(905)   // 缓存态最小adj(引擎管的那类); fg=0不计入
-    const qq = w.find(e => e.pkg === 'com.tencent.mobileqq')!
-    expect(qq.adj).toBe(925)
-    expect(qq.cchAdj).toBe(925)
+    expect(w.find(e => e.pkg === 'com.tencent.mobileqq')!.adj).toBe(925)
   })
   it('名单内但快照没有 → 占位保留', () => {
-    expect(whiteStatus('', 'com.a')).toEqual([{ pkg: 'com.a', adj: null, cchAdj: null, states: [] }])
+    expect(whiteStatus('', 'com.a')).toEqual([{ pkg: 'com.a', adj: null, states: [] }])
   })
   it('WHITE带冒号只精确匹配', () => {
     const w = whiteStatus('cch|10|com.a:sub', 'com.a:sub com.b')
-    expect(w[0].cchAdj).toBe(10)
-    expect(w[1].cchAdj).toBeNull()
-  })
-})
-
-describe('v0.3 可归因字段', () => {
-  it('DEATH/SKIPPED/KEEPADJ带pid 解析', () => {
-    const log = [
-      `[${today} 10:00:00] KEEPADJ 15942 com.tencent.mm 905->200`,
-      `[${today} 10:01:00] DEATH com.tencent.mm:peak pid=27092 last_state=cch`,
-      `APPLIED=0 KILLED=0 FAILED=0 missing=0 mismatch=0 write=0 SKIPPED=3`,
-      `APPLIED=1 KILLED=0 FAILED=0 missing=0 mismatch=0 write=0 SKIPPED=2`,
-    ].join('\n')
-    const s = parseStats(log)
-    expect(s.keepAdj).toBe(1)   // 带pid后仍计数
-    expect(s.deaths).toBe(1)
-    expect(s.skipped).toBe(5)   // 3+2 累加
+    expect(w[0].adj).toBe(10)
+    expect(w[1].adj).toBeNull()
   })
 })
