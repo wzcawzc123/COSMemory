@@ -1,7 +1,7 @@
 #!/system/bin/sh
-# L4 v5 — 破坏性测试(安全阀验收)
-# 教训汇总: 1)先停看门狗再杀引擎 2)KILL须带:后缀 3)SKIP不进stats.log,断言直调决策层
-#           4)决策层测试须source库+取真实快照(T3后parsed是坏数据) 5)恢复用setsid防终端回收
+# L4 v5 — 破坏性测试(安全阀验收), 2026-09-28 真机 20/20 通过
+# 教训: 1)先停看门狗再杀引擎 2)KILL须带:后缀 3)SKIP不写stats.log,断言直调决策层
+#       4)决策层测试须source库+取真实快照 5)恢复用setsid防终端进程组回收
 M=/data/adb/modules/COSMemory
 LIST=/sdcard/Android/COSMemory/名单列表.conf
 PASS=0; FAIL=0
@@ -90,7 +90,7 @@ eval "$(parse_lists "$LIST")"
 OUT=$(plan_reclaim /tmp/t4_parsed.txt "$KILL_LIST" "$M/data/cool" 5 "$WHITE_LIST")
 echo "$OUT" | grep -q 'SKIP whitelist com.tencent.mm:push' \
   && ok "决策层拦截 SKIP whitelist" || bad "决策层未拦截: [$OUT]"
-echo "$OUT" | grep -q '^KILL .*com\.tencent\.mm' && bad "决策层输出了白名单KILL" || ok "决策层无白名单KILL输出"
+echo "$OUT" | grep -q '^KILL .*com\.tencent\.mm' && bad "决策层输出白名单KILL" || ok "决策层无白名单KILL输出"
 rm -f /tmp/t4_snap.txt /tmp/t4_parsed.txt
 # (b) 端到端
 if ! mm_main_alive; then
