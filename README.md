@@ -10,7 +10,11 @@
 <p>作者：<b>是你吗薰儿</b> · 基于 <a href="https://github.com/OneB1ank/A1Memory">HChai/OneB1ank 的 A1Memory</a> 二次开发 (GPLv3)</p>
 </div>
 
-![面板截图](image/panel.png)
+**主界面 · 引擎状态与白名单**
+![面板主界面](image/panel-top.jpg)
+
+**能力探测 · 异常监控**
+![面板能力探测](image/panel-bottom.jpg)
 
 ## 🤔 这是什么
 
