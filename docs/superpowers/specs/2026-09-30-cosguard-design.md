@@ -271,3 +271,4 @@ TS|PID|PKG|RULE|ACT|REASON
 | E3 | dedup 窗 3s 吞掉 ≥1s force-stop 重试，保险丝永不触发（单测暴露） | 窗缩 500ms：同栈重载(µs)仍去重，真实重试独立计数 |
 | E4 | `am kill` reason=`kill background`（spike 未见新值）不属 BLOCK 集 | 符合设计：shell 主动杀非系统强停，放行并记录 |
 | E5 | spec T4 的 force-stop×20 既不可拦(D2)又形不成重试环(杀完即死) | 引入 `killbg` 测试注入规则(默认集不含)，T4 改 `am kill` 循环构造同 pid 重试环 |
+| E6 | T4 的 am kill 重试环在 ColorOS 不可达：首轮 BLOCK 后进程被自动冻结(adj=500)，次轮被 `killPackageProcessesLSP` 的 `isPackageFrozen` 门在 killLocked **之前**挡下，fuse 计数不涨 | **环境不可达，非缺陷**——实为双重保活(拦截+frozen门)；T4 以 JUnit 11 断言为权威，实机等价验证=连续多轮 am kill 进程持续 ALIVE（已多轮实证） |
