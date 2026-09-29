@@ -2,6 +2,8 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { detectBridge, execRead, type KsuBridge } from './composables/ksu'
 import { parseStats, parseCaps, whiteStatus, CAP_LABELS, type DayStats } from './composables/stats'
+import GuardPanel from './components/GuardPanel.vue'
+import { parseGuard, guardDate, type GuardStats } from './composables/guard'
 
 const MOD = '/data/adb/modules/COSMemory'
 const LIST = '/sdcard/Android/COSMemory/名单列表.conf'
@@ -13,6 +15,7 @@ const white = ref<{ pkg: string; adj: number | null; states: string[] }[]>([])
 const logTail = ref<string[]>([])
 const engineUp = ref<boolean | null>(null)
 const error = ref('')
+const guard = ref<GuardStats | null>(null)
 let timer: number | undefined
 
 const MODE: Record<string, string> = {
@@ -31,14 +34,16 @@ async function refresh() {
   if (!b) { error.value = '未检测到 KSU 桥（请在 KernelSU 管理器中打开）'; return }
   try {
     // 阶段1: 全部小文件 + pgrep (总耗时 ≤25ms; 不再遍历 /proc)
-    const [log, capsTxt, listTxt, parsed, livePid] = await Promise.all([
+    const [log, capsTxt, listTxt, parsed, livePid, guardTxt] = await Promise.all([
       execRead(b, `tail -100 ${MOD}/data/stats.log 2>/dev/null`),
       execRead(b, `cat ${MOD}/data/caps.conf 2>/dev/null`),
       execRead(b, `cat "${LIST}" 2>/dev/null`),
       execRead(b, `cat ${MOD}/data/parsed.txt 2>/dev/null`),
       execRead(b, 'pgrep -f engine/memory.sh 2>/dev/null || true'),
+      execRead(b, `sh ${MOD}/engine/guard_stats.sh ${guardDate.value || ''}`).catch(() => ''),
     ])
     stats.value = parseStats(log)
+    guard.value = parseGuard(guardTxt)
     caps.value = parseCaps(capsTxt)
     const wl = listTxt.split('\n').filter(l => l.startsWith('WHITE ')).map(l => l.slice(6).trim()).join(' ')
 
@@ -177,5 +182,12 @@ onUnmounted(() => { if (timer) clearInterval(timer) })
           :class="{ bad: /SENTINEL|WATCHDOG|halt/.test(l) }">{{ l }}</div>
       </div>
     </template>
+
+    <!-- AMS防线 (独立于主面板数据) -->
+    <div class="sec">
+      <div class="b"><svg class="si" viewBox="0 0 24 24"><use href="#i-lock-unlock-fill"/></svg></div>
+      <h2>AMS防线</h2>
+    </div>
+    <GuardPanel :stats="guard" @pick="(d) => { guardDate.value = d; refresh(); }" />
   </div>
 </template>
