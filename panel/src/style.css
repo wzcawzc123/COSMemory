@@ -105,3 +105,10 @@ body{
 .tabbar button.on .si{fill:var(--ink)}
 .wrap{padding-bottom:84px}
 .alert.ok{background:var(--green-bg); color:var(--green)}
+
+.gd-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.gd-app-top{display:flex;justify-content:space-between;align-items:center}
+.gd-app-n b{font-size:20px}
+.gd-app-n i{font-style:normal;font-size:11px;color:var(--ink2,#888);margin-left:4px}
+.gd-app-t{font-size:11px;color:var(--ink2,#888);margin-top:4px}
+.gd-empty{color:var(--ink2,#888);font-size:12px;padding:8px 0}

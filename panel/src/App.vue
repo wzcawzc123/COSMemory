@@ -109,7 +109,7 @@ async function setGuardMode(toGuard: boolean) {
   if (!b) { error.value = '无 KSU 桥'; return }
   const target = toGuard ? 'guard' : 'observe'
   try {
-    await execRead(b, `sed -i 's/"mode": "[a-z]*"/"mode": ${target}/' ${MOD}/config/memory.json`)
+    await execRead(b, `sed -i 's/"mode": *"[a-z]*"/"mode": "${target}"/' ${MOD}/config/memory.json`)
     const back = await execRead(b, `grep -o '"mode": "[a-z]*"' ${MOD}/config/memory.json`)
     if (back.includes(target)) {
       if (guard.value) guard.value = { ...guard.value, mode: target }
