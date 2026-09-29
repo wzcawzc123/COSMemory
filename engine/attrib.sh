@@ -1,5 +1,5 @@
 #!/bin/sh
-# engine/attrib.sh — 可归因性函数(v0.3): 白名单死亡检测 + stats轮转
+# engine/attrib.sh — 可归因性函数(v0.3): 白名单死亡检测 + stats轮转 + kill采集
 
 # DEATH 检测: 上一轮白名单快照有、本轮消失 → 记 DEATH(pkg/pid/最后状态)
 # $1=parsed.txt(本轮) $2=WHITE_LIST  状态文件=$WORKDIR/wl_prev.txt
@@ -46,7 +46,7 @@ capture_kills() {
   # 增量(>上次窗口) 且 白名单相关 且 died/kill事件
   echo "$EV" | awk -v L="$LAST" '{t=$1; sub(/\..*/, "", t); if (t+0 > L+0) print}' \
     | grep -E 'am_proc_died|am_kill' | grep -E "$PAT" >> "$WORKDIR/kill_capture.log" 2>/dev/null
-  # 推进窗口基准(events首行=最旧,需取最大epoch → 用最后一行)
+  # 推进窗口基准(取最后一行=最新增量点)
   echo "$EV" | tail -1 | awk '{print int($1)}' > "$WORKDIR/kill_last"
   # 轮转
   sz=$(wc -c < "$WORKDIR/kill_capture.log" 2>/dev/null)

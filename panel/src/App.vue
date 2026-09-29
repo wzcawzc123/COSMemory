@@ -163,6 +163,10 @@ onUnmounted(() => { if (timer) clearInterval(timer) })
           <span class="pill" :class="stats.watchdogRestarts > 0 ? 'warn' : 'ok'">{{ stats.watchdogRestarts }}</span></div>
         <div class="row"><div class="name">名单非法行</div>
           <span class="pill" :class="stats.listBad > 0 ? 'warn' : 'ok'">{{ stats.listBad }}</span></div>
+        <div class="row"><div class="name">白名单拦截<small style="color:var(--ink2)">（点名杀被拦）</small></div>
+          <span class="pill" :class="stats.skipped > 0 ? 'ok' : ''">{{ stats.skipped }}</span></div>
+        <div class="row"><div class="name">白名单死亡<small style="color:var(--ink2)">（进程消失事件）</small></div>
+          <span class="pill" :class="stats.deaths > 0 ? 'warn' : 'ok'">{{ stats.deaths }}</span></div>
       </div>
 
       <!-- 日志 -->

@@ -68,3 +68,18 @@ describe('whiteStatus', () => {
     expect(w[1].cchAdj).toBeNull()
   })
 })
+
+describe('v0.3 可归因字段', () => {
+  it('DEATH/SKIPPED/KEEPADJ带pid 解析', () => {
+    const log = [
+      `[${today} 10:00:00] KEEPADJ 15942 com.tencent.mm 905->200`,
+      `[${today} 10:01:00] DEATH com.tencent.mm:peak pid=27092 last_state=cch`,
+      `APPLIED=0 KILLED=0 FAILED=0 missing=0 mismatch=0 write=0 SKIPPED=3`,
+      `APPLIED=1 KILLED=0 FAILED=0 missing=0 mismatch=0 write=0 SKIPPED=2`,
+    ].join('\n')
+    const s = parseStats(log)
+    expect(s.keepAdj).toBe(1)   // 带pid后仍计数
+    expect(s.deaths).toBe(1)
+    expect(s.skipped).toBe(5)   // 3+2 累加
+  })
+})

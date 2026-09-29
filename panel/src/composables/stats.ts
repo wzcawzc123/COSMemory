@@ -1,11 +1,11 @@
 // stats.ts — 解析引擎输出为面板数据 (纯函数, 可测)
 export interface DayStats {
-  keepAdj: number; killed: number; skips: Record<string, number>
+  keepAdj: number; killed: number; skipped: number; deaths: number; skips: Record<string, number>
   sentinelHalt: number; watchdogRestarts: number; listBad: number
   engineStarted: boolean; lastLine: string
 }
 export function emptyStats(): DayStats {
-  return { keepAdj: 0, killed: 0, skips: {}, sentinelHalt: 0,
+  return { keepAdj: 0, killed: 0, skipped: 0, deaths: 0, skips: {}, sentinelHalt: 0,
            watchdogRestarts: 0, listBad: 0, engineStarted: false, lastLine: '' }
 }
 const TS = /^\[(\d{4}-\d{2}-\d{2}) /
@@ -19,6 +19,7 @@ export function parseStats(log: string, day = ''): DayStats {
     if (m) {
       if (m[1] !== want) continue
       if (line.includes('KEEPADJ ')) s.keepAdj++
+      else if (line.includes('DEATH ')) s.deaths++
       else if (line.includes('SENTINEL HALT')) s.sentinelHalt++
       else if (line.includes('WATCHDOG restart')) s.watchdogRestarts++
       else if (line.includes('LIST_BAD')) s.listBad++
@@ -27,6 +28,8 @@ export function parseStats(log: string, day = ''): DayStats {
     } else {
       const k = line.match(/KILLED=(\d+)/)
       if (k) s.killed += Number(k[1])
+      const sk2 = line.match(/SKIPPED=(\d+)/)
+      if (sk2) s.skipped += Number(sk2[1])
       const sk = line.match(/^SKIP (\S+)/)
       if (sk) s.skips[sk[1]] = (s.skips[sk[1]] ?? 0) + 1
     }
