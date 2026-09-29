@@ -6,7 +6,7 @@
 
 - **v0.2 已交付**：shell 引擎 + KSU WebUI 面板（Vue3 单文件），部署于一加 11 / ColorOS 16 / 16GB / KernelSU
 - 发布包：`COSMemory-v0.2.zip`（md5 `5c730f0185d0b10c2fd5a3fd471ad113`，已归档 旧版/）
-- **v0.3 迭代中（2026-09-29）**：可归因性（DEATH/pid/kill采集）+ 日志卫生（轮转/死因/FAILED分类）+ SKIP 可见化；成品归档规则：`/storage/emulated/0/内存管理模块/` 外层仅最新版，历史版本进 `旧版/`
+- **v0.3 完成（2026-09-29）**：可归因性七件套全部实现并真机验证，55断言双端全绿；成品归档规则：`/storage/emulated/0/内存管理模块/` 外层仅最新版，历史版本进 `旧版/`
 - **L3 进行中（2026-09-29 首日初检 + 三轮深挖收官）**：7.5h 保活纠正 752 次、零 KILL、零非法行、两次真机重启保护机制全部自动恢复
 - **QQ 冷启三轮归因（2026-09-29 上午）**：①`no_frozen` 厂商豁免实验**阴性已回滚**（framework 无此键/Athena 重读无效/Hans 照冻）②Hans 冻结**无害**（收包 15s 解冻）③真凶=**AOSP 标准的 AMS cached 回收 + Activity trim**（`am_proc_died adj=905` 按 procState 杀不看 adj）④对照组：**微信昨夜同样死亡 15 次**（09:26 `mm:support` 905 档），「微信免疫」是使用频率造成的错觉——系统对所有 App 一视同仁
 
@@ -40,15 +40,15 @@
 
 - [ ] **L3 长期日用数据**：日用几天后分析 `stats.log`——保活纠正成功率、白名单 adj 稳定占比、冷启动体感对比
 - [x] ~~no_frozen 厂商豁免实验~~ → **阴性，已回滚还原（2026-09-29）**：system_server framework 无此键、Athena(com.oplus.athena) 重启重读无效、Hans 照常冻结；Doze 白名单/待机桶/frozen_dlg 对比微信 QQ 全部同待遇——豁免名单路线整体排除
-- [ ] **可归因性补齐**（v0.3 迭代中，2026-09-29 开工）：
-  - [ ] DEATH 行：白名单进程快照消失即记录（pkg/pid/最后adj）
-  - [ ] KEEPADJ 带 pid（区分进程换代）
-  - [ ] lmkd/am_proc_died kill 日志轻量采集（时间窗增量归档 kill_capture.log）
-- [ ] **日志卫生**（v0.3 迭代中）：
-  - [ ] stats.log 轮转（>512KB 截尾 64KB，防 17MB/月）
-  - [ ] 看门狗死因（记 prev_alive 运行时长，<60s=短命异常）
-  - [ ] FAILED 分类（missing/mismatch/write 三类计数）
-- [ ] **SKIP 拦截可见化**（v0.3 迭代中）：exec 汇总行加 SKIPPED 计数 → stats.log 累计；面板异常监控区加「白名单拦截」行
+- [x] **可归因性补齐**（v0.3 完成）：
+  - [x] DEATH 行：白名单进程快照消失即记录（pkg/pid/最后状态）— 真机实测(杀appbrand 12s内记录)
+  - [x] KEEPADJ 带 pid（区分进程换代）
+  - [x] am_proc_died 白名单 kill 采集（events时间窗增量 → kill_capture.log >64KB截尾）— 真机抓到真实事件
+- [x] **日志卫生**（v0.3 完成）：
+  - [x] stats.log 轮转（>512KB 截尾 64KB）+ kill_capture 同款轮转
+  - [x] 看门狗死因 prev_alive（真机实测 76s/100s 两条有效记录）
+  - [x] FAILED 分类（missing/mismatch/write）+ SKIPPED 汇总
+- [x] **SKIP 拦截可见化**（v0.3 完成 2026-09-29）：exec 汇总行 SKIPPED 计数 + stats.log 累计 + 面板异常区「白名单拦截/白名单死亡」两行
 - [ ] **发布帖**：效果数据 + 验证矩阵 + 已知限制（诚实清单是社区信任的根基）
 - [ ] v1.0 打 tag + 终版发布包 + README 数据更新
 
