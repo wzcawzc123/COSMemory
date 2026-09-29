@@ -4,6 +4,7 @@
   "reclaim": { "aggressive": false, "psiThreshold": 5.0,
                "maxKillPerRound": 5, "cooldownSec": 60 },
   "freeze": { "enabled": true },
+  "guard": { "mode": "observe", "block_rules": "o-stop,frozen,cached,empty,cpu" },
   "tuning": { "enabled": false },
   "log": { "path": "/sdcard/Android/COSMemory/Run.log", "level": "info" },
   "panel": { "port": 8085 }

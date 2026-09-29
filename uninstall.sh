@@ -4,3 +4,4 @@ MODDIR=$(dirname "$0")
 . "$MODDIR/engine/exec.sh"
 restore_state "$MODDIR/data/state" 2>/dev/null
 rm -rf /sdcard/Android/COSMemory
+rm -rf /data/system/cosmem 2>/dev/null
