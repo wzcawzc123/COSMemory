@@ -2,8 +2,13 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { detectBridge, execRead, type KsuBridge } from './composables/ksu'
 import { parseStats, parseCaps, whiteStatus, CAP_LABELS, type DayStats } from './composables/stats'
-import GuardPanel from './components/GuardPanel.vue'
 import { parseGuard, guardDate, type GuardStats } from './composables/guard'
+import { initTheme } from './composables/theme'
+import DashboardView from './views/DashboardView.vue'
+import DefenseView from './views/DefenseView.vue'
+import SystemView from './views/SystemView.vue'
+import ListView from './views/ListView.vue'
+import SettingsView from './views/SettingsView.vue'
 
 const MOD = '/data/adb/modules/COSMemory'
 const LIST = '/sdcard/Android/COSMemory/名单列表.conf'
@@ -16,6 +21,9 @@ const logTail = ref<string[]>([])
 const engineUp = ref<boolean | null>(null)
 const error = ref('')
 const guard = ref<GuardStats | null>(null)
+const listRaw = ref('')
+type Tab = 'dash' | 'defense' | 'system' | 'list' | 'set'
+const activeTab = ref<Tab>('dash')
 let timer: number | undefined
 
 const MODE: Record<string, string> = {
@@ -46,6 +54,7 @@ async function refresh() {
     guard.value = parseGuard(guardTxt)
     caps.value = parseCaps(capsTxt)
     const wl = listTxt.split('\n').filter(l => l.startsWith('WHITE ')).map(l => l.slice(6).trim()).join(' ')
+    listRaw.value = listTxt
 
     // 解析引擎快照 → pid 信息表 (state|proc|pid|pkg)
     const pidInfo = new Map<string, { state: string; pkg: string }>()
@@ -82,10 +91,34 @@ async function refresh() {
   } catch (e) { error.value = String(e) }
 }
 
+const TABS: { id: Tab; label: string; icon: string }[] = [
+  { id: 'dash', label: '总览', icon: 'i-dashboard-2-fill' },
+  { id: 'defense', label: '防线', icon: 'i-lock-unlock-fill' },
+  { id: 'system', label: '系统', icon: 'i-cpu-fill' },
+  { id: 'list', label: '名单', icon: 'i-user-smile-fill' },
+  { id: 'set', label: '设置', icon: 'i-tools-fill' },
+]
+
 const capsOk = computed(() => Object.values(caps.value).filter(v => v === 1).length)
 const capsEntries = computed(() => Object.entries(caps.value))
 
-onMounted(() => { refresh(); timer = window.setInterval(refresh, 5000) })
+/** 设置页模式开关: 写 memory.json mode → 30s 桥自动生效(热加载) */
+async function setGuardMode(toGuard: boolean) {
+  const b = bridge.value
+  if (!b) { error.value = '无 KSU 桥'; return }
+  const target = toGuard ? 'guard' : 'observe'
+  try {
+    await execRead(b, `sed -i 's/"mode": "[a-z]*"/"mode": ${target}/' ${MOD}/config/memory.json`)
+    const back = await execRead(b, `grep -o '"mode": "[a-z]*"' ${MOD}/config/memory.json`)
+    if (back.includes(target)) {
+      if (guard.value) guard.value = { ...guard.value, mode: target }
+      error.value = ''
+      alert(`已切换为 ${target}，30 秒内经配置桥生效`)
+    } else error.value = '模式切换失败: ' + (back.trim() || '空回读')
+  } catch (e) { error.value = String(e) }
+}
+
+onMounted(() => { initTheme(); refresh(); timer = window.setInterval(refresh, 5000) })
 onUnmounted(() => { if (timer) clearInterval(timer) })
 
 </script>
@@ -104,90 +137,26 @@ onUnmounted(() => { if (timer) clearInterval(timer) })
   </div>
 
   <div class="wrap">
-    <div v-if="error" class="alert">{{ error }}</div>
+    <div v-if="error" class="alert" :class="{ ok: error.includes('已切换') }">{{ error }}</div>
 
-    <template v-else-if="stats">
-      <!-- Hero: 引擎状态 -->
-      <div class="hero">
-        <div class="hero-top">
-          <div class="hero-ic"><svg class="si" viewBox="0 0 24 24"><use href="#i-cpu-fill"/></svg></div>
-          <div class="hero-tt">
-            <div class="t">引擎状态</div>
-            <div class="s">ColorOS 16 · 基于 A1Memory 二次开发</div>
-          </div>
-          <span class="tag" :class="engineUp ? '' : 'off'">
-            {{ engineUp ? '运行中' : '已停止' }}
-          </span>
-        </div>
-        <div class="hero-sep" />
-        <div class="hero-pills">
-          <div class="hp"><div class="n">{{ stats.keepAdj }}</div><div class="l">今日保活</div></div>
-          <div class="hp"><div class="n">{{ stats.killed }}</div><div class="l">今日回收</div></div>
-          <div class="hp"><div class="n">{{ capsOk }}/6</div><div class="l">能力探测</div></div>
-        </div>
-      </div>
-
-      <!-- 白名单 -->
-      <div class="sec"><div class="b"><svg class="si" viewBox="0 0 24 24"><use href="#i-lock-unlock-fill"/></svg></div><h2>白名单状态</h2></div>
-      <div class="card">
-        <div v-if="!white.length" class="empty">名单为空</div>
-        <div v-for="w in white" :key="w.pkg" class="row">
-          <div>
-            <div class="name">{{ w.pkg }}</div>
-            <div class="meta">{{ w.states.join(' · ') || '不在快照' }}</div>
-          </div>
-          <span class="pill" :class="w.cchAdj === 200 ? 'ok' : (w.cchAdj === null ? '' : 'bad')">
-            {{ w.cchAdj === null ? '系统托管' : 'adj ' + w.cchAdj }}
-          </span>
-        </div>
-      </div>
-
-      <!-- 能力探测: 2x2 方块 -->
-      <div class="sec"><div class="b"><svg class="si" viewBox="0 0 24 24"><use href="#i-puzzle-fill"/></svg></div><h2>能力探测</h2></div>
-      <div class="grid">
-        <div v-for="[k, v] in capsEntries" :key="k" class="tile">
-          <div class="th">
-            <span class="pill" :class="v === 1 ? 'ok' : 'bad'">{{ v === 1 ? '支持' : '不支持' }}</span>
-          </div>
-          <div class="ic"><svg class="si" viewBox="0 0 24 24"><use :href="'#' + (CAP_ICON[k] ?? 'i-information-fill')"/></svg></div>
-          <div class="t">{{ MODE[k] ?? CAP_LABELS[k] ?? k }}</div>
-        </div>
-        <div v-if="!capsEntries.length" class="tile">
-          <div class="ic">…</div>
-          <div class="t">等待引擎</div>
-          <div class="s">caps.conf 未生成</div>
-        </div>
-      </div>
-
-      <!-- 异常 -->
-      <div class="sec"><div class="b"><svg class="si" viewBox="0 0 24 24"><use href="#i-information-fill"/></svg></div><h2>异常监控</h2></div>
-      <div class="card">
-        <div class="row"><div class="name">哨兵停机</div>
-          <span class="pill" :class="stats.sentinelHalt > 0 ? 'bad' : 'ok'">{{ stats.sentinelHalt }}</span></div>
-        <div class="row"><div class="name">看门狗重启</div>
-          <span class="pill" :class="stats.watchdogRestarts > 0 ? 'warn' : 'ok'">{{ stats.watchdogRestarts }}</span></div>
-        <div class="row"><div class="name">名单非法行</div>
-          <span class="pill" :class="stats.listBad > 0 ? 'warn' : 'ok'">{{ stats.listBad }}</span></div>
-        <div class="row"><div class="name">白名单拦截<small style="color:var(--ink2)">（点名杀被拦）</small></div>
-          <span class="pill" :class="stats.skipped > 0 ? 'ok' : ''">{{ stats.skipped }}</span></div>
-        <div class="row"><div class="name">白名单死亡<small style="color:var(--ink2)">（进程消失事件）</small></div>
-          <span class="pill" :class="stats.deaths > 0 ? 'warn' : 'ok'">{{ stats.deaths }}</span></div>
-      </div>
-
-      <!-- 日志 -->
-      <div class="sec"><div class="b"><svg class="si" viewBox="0 0 24 24"><use href="#i-terminal-box-fill"/></svg></div><h2>引擎日志</h2></div>
-      <div class="logbox">
-        <div v-if="!logTail.length" class="empty">暂无日志</div>
-        <div v-for="(l, i) in logTail" :key="i" class="logline"
-          :class="{ bad: /SENTINEL|WATCHDOG|halt/.test(l) }">{{ l }}</div>
-      </div>
-    </template>
-
-    <!-- AMS防线 (独立于主面板数据) -->
-    <div class="sec">
-      <div class="b"><svg class="si" viewBox="0 0 24 24"><use href="#i-lock-unlock-fill"/></svg></div>
-      <h2>AMS防线</h2>
-    </div>
-    <GuardPanel :stats="guard" @pick="(d) => { guardDate.value = d; refresh(); }" />
+    <DashboardView v-if="activeTab === 'dash'"
+      :stats="stats" :engine-up="engineUp" :caps-ok="capsOk" :white="white" :guard="guard" />
+    <DefenseView v-else-if="activeTab === 'defense'"
+      :guard="guard" @pick="(d) => { guardDate.value = d; refresh(); }" />
+    <SystemView v-else-if="activeTab === 'system'"
+      :stats="stats" :caps-entries="capsEntries" />
+    <ListView v-else-if="activeTab === 'list'"
+      :white="white" :list-raw="listRaw" />
+    <SettingsView v-else
+      :log-tail="logTail" :guard="guard" @set-guard-mode="setGuardMode" />
   </div>
+
+  <!-- 底部导航 5 键 -->
+  <nav class="tabbar">
+    <button v-for="t in TABS" :key="t.id" :class="{ on: activeTab === t.id }"
+      @click="activeTab = t.id">
+      <svg class="si" viewBox="0 0 24 24"><use :href="'#' + t.icon" /></svg>
+      <span>{{ t.label }}</span>
+    </button>
+  </nav>
 </template>

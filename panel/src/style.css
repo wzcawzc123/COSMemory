@@ -81,3 +81,27 @@ body{
 .sec .b .si{width:15px; height:15px; color:var(--ink);}
 .tile .ic .si{width:20px; height:20px; color:var(--ink);}
 .sec .b{padding:0; overflow:hidden;}
+
+/* 深色 · 暗夜棕 (data-theme=dark) — 与浅色奶油系同族的暖调暗版 */
+:root[data-theme="dark"]{
+  --bg:#171310; --card:#221C19; --card2:#2E2622;
+  --ink:#EFE7E2; --ink2:#A99992; --ink3:#776761;
+  --pill:#2E2622; --pill-line:#3E3531;
+  --green:#7FBE93; --green-bg:#1E3326;
+  --red:#E58374;   --red-bg:#3B211D;
+  --amber:#DBAA5F; --amber-bg:#382B18;
+  --sep:#302824;
+}
+
+/* 底部导航 5 键 */
+.tabbar{position:fixed; left:0; right:0; bottom:0; z-index:30;
+  display:grid; grid-template-columns:repeat(5,1fr);
+  background:var(--card); border-top:1px solid var(--sep);
+  padding:7px 0 calc(7px + env(safe-area-inset-bottom, 0px)); backdrop-filter:blur(12px)}
+.tabbar button{display:flex; flex-direction:column; align-items:center; gap:3px;
+  border:none; background:transparent; cursor:pointer; color:var(--ink3); font-size:10.5px}
+.tabbar button .si{width:22px; height:22px; fill:var(--ink3); transition:fill .15s}
+.tabbar button.on{color:var(--ink); font-weight:600}
+.tabbar button.on .si{fill:var(--ink)}
+.wrap{padding-bottom:84px}
+.alert.ok{background:var(--green-bg); color:var(--green)}
