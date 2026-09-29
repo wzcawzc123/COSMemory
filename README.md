@@ -6,7 +6,7 @@
 ![ColorOS](https://img.shields.io/badge/ColorOS-15%20%7C%2016-brightgreen)
 ![Tested](https://img.shields.io/badge/实机验证-一加11%20%C2%B7%20CO16%20%C2%B7%20KSU-orange)
 
-<p><b>ColorOS 15/16 · 白名单保活 + 名单外智能回收 · KernelSU / Magisk 模块</b></p>
+<p><b>Android 12+ 通用引擎（ColorOS 15/16 实测）· 白名单保活 + 名单外智能回收 · KernelSU / Magisk 模块</b></p>
 <p>作者：<b>是你吗薰儿</b> · 基于 <a href="https://github.com/OneB1ank/A1Memory">HChai/OneB1ank 的 A1Memory</a> 二次开发 (GPLv3)</p>
 </div>
 
@@ -123,11 +123,15 @@ FREEZE com.bloat.app
 | 一加 11 / ColorOS 16 / 16GB / KernelSU | ✅ 全量实机验证（单测 / L2 因果 / L4 破坏性 20 项 / 开机自启） |
 | Magisk 端 | ⚠️ 理论兼容，**无实机验证** |
 | ColorOS 15 | ⚠️ 理论兼容，**无实机验证** |
+| 其他 Android 12+ ROM（MIUI/OriginOS/One UI/类原生…） | ⚠️ 引擎通用可用（依赖均为 AOSP 标准件），**效果待社区验证**——哨兵+能力降级保证未验证 ROM 上安全试用（最坏不干活，不会干错活） |
 | 其他机型 / 8GB | ⚠️ 未验证，风险自担 |
 
 未验证项**如实标注**，不夸大支持范围。完整路线见 [ROADMAP.md](ROADMAP.md)。
 
 ## ❓ FAQ
+
+**为什么挂着的 App 点开还是冷启动（走启动页）？**
+冷启动的主因是 **AOSP 标准的 Activity trim + cached 进程回收**（按 procState 杀、不看 adj）——全安卓通病，本模块的 `adj=200` 覆盖的是**内存压力下 lmkd 的猎杀**（真缺内存时白名单最后被杀）。实测对照：微信在同机同样会被系统回收（一夜 15 次记录），感知差异来自使用频率。彻底解需 hook AMS（阶段二规划）。
 
 **装完没感觉？**
 轻负载下模块刻意保持安静（这是设计目标）。效果看面板数据：今日保活纠正次数、白名单 `adj 200` 占比。真正的体感差异在重负载/多任务场景——游戏后切回微信、长时间使用后的后台存活率。
