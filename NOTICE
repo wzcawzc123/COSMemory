@@ -1,0 +1,5 @@
+COSMemory 内存管理模块
+基于 HChai/OneB1ank 的 A1Memory (https://github.com/OneB1ank/A1Memory) 二次开发,
+继承 GPLv3。原作者: HChai。名单格式/memory.json/多语言等外壳协议源自上游;
+engine/ 引擎为本项目重写。
+作者: 是你吗薰儿

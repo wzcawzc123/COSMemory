@@ -1,0 +1,26 @@
+#!/system/bin/sh
+# service.sh — KSU/Magisk/Apatch 兼容入口 + 看门狗 v0.3(死因记录)
+MODDIR=$(dirname "$0")
+BB=""
+for c in /data/adb/ksu/bin/busybox /data/adb/magisk/busybox /data/adb/ap/bin/busybox; do
+  [ -x "$c" ] && { BB=$c; break; }
+done
+export STATS_LOG="$MODDIR/data/stats.log"; mkdir -p "$MODDIR/data"
+[ -n "$BB" ] && export ASH_STANDALONE=1
+run() { [ -n "$BB" ] && "$BB" ash "$@" || sh "$@"; }
+
+while [ "$(getprop sys.boot_completed)" != "1" ]; do sleep 5; done
+sleep 3
+while :; do
+  if ! pgrep -f 'engine/memory.sh' >/dev/null 2>&1; then
+    PA=unknown
+    if [ -f "$MODDIR/data/engine.started" ]; then
+      ST=$(cat "$MODDIR/data/engine.started" 2>/dev/null)
+      [ -n "$ST" ] && PA="$(( $(date +%s) - ST ))s"
+      rm -f "$MODDIR/data/engine.started"
+    fi
+    echo "[$(date '+%F %T')] WATCHDOG restart prev_alive=$PA" >> "$STATS_LOG"
+    WORKDIR="$MODDIR/data" STATS_LOG="$STATS_LOG" run "$MODDIR/engine/memory.sh" >/dev/null 2>&1 &
+  fi
+  sleep 30
+done
