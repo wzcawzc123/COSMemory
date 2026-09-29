@@ -117,10 +117,10 @@ on killLocked(reason, subReason, ...):
   1. tryLoadConfig()            # 5s 缓存+mtime热加载; 失败→degraded只记不拦
   2. pkg = pkgOf(app); if pkg ∉ WHITE: proceed   # 白名单外零开销直通, observe/guard
                                                   # 两模式下均不记(§6.3 "只记白名单相关")
-  3. if MODE == observe:        record(PASS_OBSERVE); proceed   # 首版常态
-  4. rule = matchFirst(reason)  # 按§5.2顺序匹配; 无命中: record(PASS_NO_RULE); proceed
-  5. if (pid+rule) 已在3秒去重窗: record(PASS_DUP); proceed
-                                # 去重覆盖fuse计数与BLOCK判定, 多重载互调只算一次杀事件
+  3. 事件级去重(T2勘误·前移): 键=pid|pkg|reason, 500ms窗
+     命中 → record(PASS_DUP); proceed   # 一次杀跨多载重只记一次, observe 同样适用
+  4. if MODE == observe:        record(PASS_OBSERVE); proceed   # 首版常态
+  5. rule = matchFirst(reason)  # 按§5.2顺序匹配; 无命中: record(PASS_NO_RULE); proceed
   6. fuse = fuseMap[pid+":"+rule]
      if fuse.count >= 10:       # 保险丝: 连续拦满10次
          fuse.reset(); record(FUSE); proceed               # 放行1次让系统收敛
@@ -128,6 +128,7 @@ on killLocked(reason, subReason, ...):
      record(BLOCK); return       # ★ skip: 不调 proceed, 进程不死
   catch (Throwable t):           record(ERROR); proceed     # fail-open 贯穿到底
 ```
+- **pidOf 勘误（T2 实测）**：ProcessRecord 字段是 `public int mPid`（+`getPid()` 兜底），非 `pid`。
 
 - **保险丝语义**：`fuseMap` 键=`pid:rule`；拦截成功不重置，放行后重置。10 次阈值 = 既容忍系统单次重试节奏，又保证 force-stop 类最多连续 10 次后必然收敛。`FUSE` 事件本身记遥测（WebUI 可见 = 杀循环的信号灯）
 - **skip 语义安全性**：等价于 Oplus 闸门 `skipKill=true` 路径（F6），AMS 对"决定不杀"已有先例分支
@@ -259,3 +260,12 @@ TS|PID|PKG|RULE|ACT|REASON
 | 遥测文件被系统清理（/data/system 空间策略） | 低 | 每轮收割、量小；缺失不影响拦截 |
 | WebUI 改动破坏现有面板 | 中 | class 前缀隔离 + 既有 tests/ 回归（§9.3） |
 | 保险丝 10 次阈值不适配某场景 | 低 | FUSE 事件可观测（W1），阈值后续可配置化（本期硬编码） |
+
+### 6.5 执行期勘误记录（2026-09-30 T2 实测回填）
+
+| # | 发现 | 修复 |
+|---|---|---|
+| E1 | `getField("pid")` 取不到值 → pid=-1，保险丝/去重键跨应用互串 | `pidOf` 改读 `public int mPid` + `getPid()` 兜底 |
+| E2 | observe 在去重前返回，一次 am kill 记 4 条，pass_observe 虚高 | 事件级去重前移至 MODE 前（键 pid\|pkg\|reason，500ms 窗） |
+| E3 | dedup 窗 3s 吞掉 ≥1s force-stop 重试，保险丝永不触发（单测暴露） | 窗缩 500ms：同栈重载(µs)仍去重，真实重试独立计数 |
+| E4 | `am kill` reason=`kill background`（spike 未见新值）不属 BLOCK 集 | 符合设计：shell 主动杀非系统强停，放行并记录 |
