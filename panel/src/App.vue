@@ -24,6 +24,7 @@ const guard = ref<GuardStats | null>(null)
 const listRaw = ref('')
 type Tab = 'dash' | 'defense' | 'system' | 'list' | 'set'
 const activeTab = ref<Tab>('dash')
+function goTab(id: Tab) { activeTab.value = id; window.scrollTo({ top: 0 }) }
 let timer: number | undefined
 
 const MODE: Record<string, string> = {
@@ -154,7 +155,7 @@ onUnmounted(() => { if (timer) clearInterval(timer) })
   <!-- 底部导航 5 键 -->
   <nav class="tabbar">
     <button v-for="t in TABS" :key="t.id" :class="{ on: activeTab === t.id }"
-      @click="activeTab = t.id">
+      @click="goTab(t.id)">
       <svg class="si" viewBox="0 0 24 24"><use :href="'#' + t.icon" /></svg>
       <span>{{ t.label }}</span>
     </button>

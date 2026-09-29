@@ -28,7 +28,7 @@ body{
 .dot.off::after{content:''; width:12px; height:12px; border-radius:50%; background:var(--red);
   box-shadow:0 0 0 4px var(--red-bg);}
 .wrap{padding:10px 16px 16px; display:flex; flex-direction:column; gap:22px;}
-.hero{background:var(--card); border-radius:var(--radius); padding:20px;}
+.hero{background:var(--card); border-radius:var(--radius); padding:16px; display:grid; grid-template-columns:1fr 1fr; gap:10px;}
 .hero-top{display:flex; gap:14px; align-items:center;}
 .hero-ic{width:52px; height:52px; border-radius:16px; background:var(--card2);
   display:flex; align-items:center; justify-content:center; font-size:26px;}
