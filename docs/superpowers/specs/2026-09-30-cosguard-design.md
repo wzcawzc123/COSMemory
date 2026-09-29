@@ -93,6 +93,7 @@ killLocked 的 reason 是自由文本，规则按子串/正则匹配（大写敏
 | `cached` | `^cached #` | 超限杀（常态 0，闸门管辖） |
 | `empty` | `^empty #` | 超限杀（同上） |
 | `cpu` | 含 `excessive cpu` | CPU 超限 2% |
+| `killbg` | 含 `kill background` | **测试注入专用**（T4/T5 经 memory.json BLOCK 临时加入、测完还原）；**默认集不含**——am kill 属 shell 主动操作非系统强停，注入仅为实机构造保险丝重试环 |
 
 - **默认 BLOCK 集 = 全部 5 个**；`remove task`（用户划卡）、`isolated not needed`、`unlockUserKey` **无规则名，永远无法被配进拦截**（D2 的"永不含划卡"用"不存在对应规则"实现，而非靠约定）
 - 未知规则名：hook 解析时忽略该规则（不影响其余规则），并在下一次白名单事件时随行记 `RULE=config ACT=ERROR`；配置整体加载失败则独立追加 `TS|0|*|config|ERROR|<原因>` 行
@@ -231,8 +232,8 @@ TS|PID|PKG|RULE|ACT|REASON
 | T1 | 桥同步 | 改名单/`MODE` → 重跑 service.sh | guard.conf 更新、mtime 新、权限 644 system:system |
 | T2 | 白名单事件记录 | 造 o-stop：微信切后台 40s+（ColorOS 自动停）或 `am kill` 白名单进程 | telemetry 出现 `PASS_OBSERVE` 行，pkg/rule/reason 正确 |
 | T3 | **划卡放行** | 上划移除微信 | 微信死亡（无任何拦截），**无 BLOCK 记录** |
-| T4 | **保险丝**（MODE=guard） | 循环 `am force-stop com.tencent.mm` ×20 | 前 10 次 BLOCK×10、第 11 次 `FUSE` 放行、第 12-20 再 BLOCK；应用最终被停（收敛） |
-| T5 | guard 拦截 + 异常路径 | MODE=guard，造 o-stop 微信 | 微信**存活**且 `BLOCK` 记录；改 BLOCK 为不存在规则名重启 → ERROR 记录、恢复放行 |
+| T4 | **保险丝**（MODE=guard，注入 killbg） | `for i in 1..15: am kill com.tencent.mm; sleep 1`（拦截使进程存活→重试同 pid 构成环） | 前 10 次 BLOCK×10、第 11 次 `FUSE`（进程死亡=收敛）、后续 am kill 无目标不再计数 |
+| T5 | guard 拦截 + 异常路径 | MODE=guard + 注入 killbg → `am kill` 微信 | 微信**存活**且 `BLOCK` 记录（killbg 规则命中）；block_rules 加未知规则名→其余规则仍生效、无 ERROR 洪泛 |
 | T6 | fail-open | `rm guard.conf` → 触发白名单被杀 | 进程正常被杀（放行）、30s 内自动重试恢复加载 |
 | T7 | 热加载 | 编辑 memory.json 的 block_rules → 重跑 service.sh（**不重启**） | 5s 内新规则生效（T2/T5 复测） |
 | T8 | 双卸载净度 | 卸 COSGuard → 查库；卸 COSMemory → 查桥文件 | LSPosed 三表清零、`/data/system/cosmem/` 清空 |
@@ -269,3 +270,4 @@ TS|PID|PKG|RULE|ACT|REASON
 | E2 | observe 在去重前返回，一次 am kill 记 4 条，pass_observe 虚高 | 事件级去重前移至 MODE 前（键 pid\|pkg\|reason，500ms 窗） |
 | E3 | dedup 窗 3s 吞掉 ≥1s force-stop 重试，保险丝永不触发（单测暴露） | 窗缩 500ms：同栈重载(µs)仍去重，真实重试独立计数 |
 | E4 | `am kill` reason=`kill background`（spike 未见新值）不属 BLOCK 集 | 符合设计：shell 主动杀非系统强停，放行并记录 |
+| E5 | spec T4 的 force-stop×20 既不可拦(D2)又形不成重试环(杀完即死) | 引入 `killbg` 测试注入规则(默认集不含)，T4 改 `am kill` 循环构造同 pid 重试环 |
