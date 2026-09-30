@@ -9,6 +9,8 @@ export interface GuardStats {
   whitelist: { pkg: string; block: number; last_ts: number; last_act: string }[]
   recent: { ts: number; pkg: string; rule: string; act: string; reason: string }[]
   dates: string[]
+  freezeToday: number
+  freezeList: { pkg: string; alive: boolean }[]
 }
 
 export const GUARD_NAME: Record<string, string> = {
@@ -40,6 +42,10 @@ export function parseGuard(json: string): GuardStats | null {
       whitelist: Array.isArray(o.whitelist) ? o.whitelist : [],
       recent: Array.isArray(o.recent) ? o.recent : [],
       dates: Array.isArray(o.dates) ? o.dates.map(String) : [],
+      freezeToday: Number(o.freezeToday ?? 0),
+      freezeList: Array.isArray(o.freezeList)
+        ? o.freezeList.map((x: { pkg?: unknown; alive?: unknown }) =>
+            ({ pkg: String(x?.pkg ?? ''), alive: !!x?.alive })) : [],
     }
   } catch { return null }
 }

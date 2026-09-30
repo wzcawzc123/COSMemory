@@ -16,5 +16,12 @@ export function parseListConf(raw: string): ListConf {
     else if (action === 'FREEZE' && target && PKG.test(target)) out.freeze.push(target)
     else out.bad.push(t)
   }
+  // D4: WHITE∩FREEZE 双向拒绝 — 与 engine/lists.sh awk 规则同源
+  const conflict = out.white.filter(w => out.freeze.includes(w))
+  if (conflict.length) {
+    out.white = out.white.filter(w => !conflict.includes(w))
+    out.freeze = out.freeze.filter(f => !conflict.includes(f))
+    out.bad.push(...conflict)
+  }
   return out
 }

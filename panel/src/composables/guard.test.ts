@@ -47,3 +47,17 @@ describe('guardName', () => {
     expect(guardName('com.foo.bar')).toBe('bar')
   })
 })
+
+describe('freeze fields', () => {
+  it('parses freezeToday/freezeList', () => {
+    const g = parseGuard('{"date":"d","mode":"guard","freezeToday":3,' +
+      '"freezeList":[{"pkg":"com.a","alive":true},{"pkg":"com.b","alive":false}]}')!
+    expect(g.freezeToday).toBe(3)
+    expect(g.freezeList).toEqual([{ pkg: 'com.a', alive: true }, { pkg: 'com.b', alive: false }])
+  })
+  it('defaults empty when absent', () => {
+    const g = parseGuard('{"date":"d","mode":"observe"}')!
+    expect(g.freezeToday).toBe(0)
+    expect(g.freezeList).toEqual([])
+  })
+})

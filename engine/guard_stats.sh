@@ -6,6 +6,7 @@ BRIDGE=${GS_BRIDGE:-/data/system/cosmem/guard.conf}
 LIVE=${GS_LIVE:-/data/system/cosmem/guard.telemetry}
 ARCH=${GS_ARCHIVE:-$D/../data/guard}
 MODPKG=${GS_MOD:-com.xune.cosguard}
+PARSED=${GS_PARSED:-$D/../data/parsed.txt}
 DATE=${1:-$(date +%F)}
 TODAY=$(date +%F)
 
@@ -78,5 +79,13 @@ END {
   printf "]"
 }' "$SRC")
 
-printf '%s,"dates":[%s]}\n' "$BODY" "$DATES"
+# FREEZE 字段 (Task 4): freezeToday=当日 FREEZE+FREEZE_BLOCK; freezeList=桥行+parsed 判活
+FZT=$(awk -F'|' '$5=="FREEZE" || $5=="FREEZE_BLOCK" {n++} END{print n+0}' "$SRC")
+FZ=""
+for p in $(sed -n 's/^FREEZE //p' "$BRIDGE" 2>/dev/null); do
+  alive=false
+  [ -f "$PARSED" ] && awk -F'|' -v p="$p" '$4==p{f=1} END{exit !f}' "$PARSED" && alive=true
+  FZ="$FZ${FZ:+,}{\"pkg\":\"$p\",\"alive\":$alive}"
+done
+printf '%s,"freezeToday":%s,"freezeList":[%s],"dates":[%s]}\n' "$BODY" "$FZT" "$FZ" "$DATES"
 rm -f "$SRC"

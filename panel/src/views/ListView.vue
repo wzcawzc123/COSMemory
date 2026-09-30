@@ -6,7 +6,9 @@ import { guardName } from '../composables/guard'
 const props = defineProps<{
   white: { pkg: string; adj: number | null; states: string[] }[]
   listRaw: string
+  freezeList?: { pkg: string; alive: boolean }[]
 }>()
+const fzOf = (p: string) => props.freezeList?.find(x => x.pkg === p)
 const conf = computed(() => parseListConf(props.listRaw))
 const GROUPS = [
   { key: 'white' as const, label: 'WHITE 保活', cls: 'ok' },
@@ -36,7 +38,10 @@ const GROUPS = [
     <div v-for="g in GROUPS" :key="g.key" class="lc-group">
       <div class="lc-head"><span class="pill" :class="g.cls">{{ g.label }}</span><i>{{ conf[g.key].length }} 条</i></div>
       <div v-if="!conf[g.key].length" class="gd-empty">空</div>
-      <div v-for="t in conf[g.key]" :key="t" class="lc-line">{{ t }}</div>
+      <div v-for="t in conf[g.key]" :key="t" class="lc-line">{{ t }}
+        <span v-if="g.key === 'freeze' && fzOf(t)" class="pill"
+          :class="fzOf(t)!.alive ? 'ok' : 'warn'">{{ fzOf(t)!.alive ? '存活' : '离线' }}</span>
+      </div>
     </div>
     <div v-if="conf.bad.length" class="lc-group">
       <div class="lc-head"><span class="pill bad">非法行 {{ conf.bad.length }}</span></div>
@@ -53,4 +58,5 @@ const GROUPS = [
 .lc-line{font-family:ui-monospace,Menlo,monospace; font-size:12px; padding:3px 0;
   color:var(--ink); word-break:break-all}
 .lc-bad{color:var(--red)}
+.lc-line .pill{float:right}
 </style>

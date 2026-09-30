@@ -24,3 +24,14 @@ describe('parseListConf', () => {
     expect(c.white).toEqual([]); expect(c.bad).toEqual([])
   })
 })
+
+describe('D4 WHITE∩FREEZE conflict', () => {
+  it('conflict pkg goes to bad and leaves both lists', () => {
+    const c = parseListConf('WHITE com.a\nWHITE com.t\nFREEZE com.a\nFREEZE com.b\n')
+    expect(c.bad).toContain('com.a')
+    expect(c.white).not.toContain('com.a')
+    expect(c.freeze).not.toContain('com.a')
+    expect(c.freeze).toContain('com.b')
+    expect(c.white).toContain('com.t')
+  })
+})

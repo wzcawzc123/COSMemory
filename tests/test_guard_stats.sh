@@ -39,4 +39,12 @@ t_match   "JSON 内 reason 转义后无裸竖线" "o-stop(40)" "$OUT"
 OUT2=$(GS_BRIDGE="$TMP/bridge.conf" GS_LIVE="$TMP/none" GS_ARCHIVE="$TMP/empty_dir" \
        sh "$D/../engine/guard_stats.sh" "2000-01-01" 2>/dev/null)
 t_assert  "空源 block=0" "1" "$(echo "$OUT2" | grep -c '"block":0,"fuse":0,"error":0,"pass_observe":0')"
+# FREEZE 字段 (Task 4)
+printf 'VERSION=1\nMODE=guard\nFREEZE_ENABLED=1\nFREEZE com.fz.alive\nFREEZE com.fz.dead\nWHITE com.tencent.mm\n' > "$TMP/bridge.conf"
+printf 'svc|SVC|111|com.fz.alive\n' > "$TMP/parsed.txt"
+printf '%s|7|com.fz.alive||FREEZE|engine reap\n%s|0|*|fz|FREEZE_BLOCK|start blocked\n' "$((T0+36000))" "$((T0+39600))" >> "$TMP/live"
+OUT=$(GS_BRIDGE="$TMP/bridge.conf" GS_LIVE="$TMP/live" GS_ARCHIVE="$TMP/arch" GS_MOD=com.xune.cosguard GS_PARSED="$TMP/parsed.txt" sh "$D/../engine/guard_stats.sh" "$(date +%F)" 2>/dev/null)
+t_assert  "freezeToday=2" "1" "$(echo "$OUT" | grep -c '"freezeToday":2')"
+t_match   "freezeList alive=true" '"pkg":"com.fz.alive","alive":true' "$OUT"
+t_match   "freezeList alive=false" '"pkg":"com.fz.dead","alive":false' "$OUT"
 rm -rf "$TMP"; t_done
