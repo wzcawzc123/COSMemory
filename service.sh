@@ -19,11 +19,13 @@ guard_bridge() {
   mkdir -p "$BRIDGE_DIR" 2>/dev/null
   chown system:system "$BRIDGE_DIR" 2>/dev/null
   chmod 775 "$BRIDGE_DIR" 2>/dev/null
-  local jc="$MODDIR/config/memory.json" mode="" block=""
+  local jc="$MODDIR/config/memory.json" mode="" block="" fze="" fzline=""
   if [ -f "$jc" ]; then
     mode=$(sed -n 's/.*"mode" *: *"\([^"]*\)".*/\1/p' "$jc" | head -1)   # guard 是 memory.json 唯一 mode 键
     block=$(sed -n 's/.*"block_rules" *: *"\([^"]*\)".*/\1/p' "$jc" | head -1)
+    fzline=$(sed -n "/"freeze"/,/}/p" "$jc" | grep "enabled" | head -1)
   fi
+  case "$fzline" in *true*) fze=1;; *) fze=0;; esac
   [ "$mode" = guard ] || mode=observe
   [ -n "$block" ] || block=o-stop,frozen,cached,empty,cpu
   eval "$(parse_lists "$MODDIR/config/名单列表.conf" 2>/dev/null)"
@@ -33,6 +35,11 @@ guard_bridge() {
     echo "MODE=$mode"
     echo "BLOCK=$block"
     for p in $WHITE_LIST; do echo "WHITE $p"; done
+    # FREEZE 桥即状态 (spec §4.2): 开关开且名单非空才出行, 否则 hook/引擎双静默
+    if [ "$fze" = 1 ] && [ -n "$FREEZE_LIST" ]; then
+      echo "FREEZE_ENABLED=1"
+      for p in $FREEZE_LIST; do echo "FREEZE $p"; done
+    fi
   } > "$BRIDGE.tmp" 2>/dev/null && mv -f "$BRIDGE.tmp" "$BRIDGE" 2>/dev/null \
     && chmod 644 "$BRIDGE" && chown system:system "$BRIDGE"
 }

@@ -38,4 +38,21 @@ mode=$(sed -n 's/.*"mode" *: *"\([^"]*\)".*/\1/p' "$jc" | head -1)   # guard 是
 [ "$mode" = guard ] || mode=observe
 t_assert "缺节回落 observe" "observe" "$mode"
 
+# FREEZE 桥行 (spec §4.2 桥即状态) — 片段 source 真调 service.sh guard_bridge
+mkdir -p "$TMP/gb"; sed -n '/^guard_bridge()/,/^}/p' "$D/../service.sh" > "$TMP/gb/g.sh"
+MODDIR="$MOD"; BRIDGE_DIR="$TMP/gb"; BRIDGE="$TMP/gb/guard.conf"
+. "$TMP/gb/g.sh"
+printf '{\n  "freeze": { "enabled": true }\n}\n' > "$jc"
+printf '{\nWHITE com.tencent.mm\nFREEZE com.example.fz\n}\n' > "$MOD/config/名单列表.conf"
+guard_bridge
+t_assert "开: FREEZE_ENABLED=1" "1" "$(grep -c '^FREEZE_ENABLED=1$' $BRIDGE)"
+t_assert "开: FREEZE行" "FREEZE com.example.fz" "$(grep '^FREEZE ' $BRIDGE)"
+printf '{\n  "freeze": { "enabled": false }\n}\n' > "$jc"
+guard_bridge
+t_assert "关: 零FREEZE行" "0" "$(grep -c '^FREEZE' $BRIDGE)"
+t_assert "关: 无ENABLED键" "0" "$(grep -c FREEZE_ENABLED $BRIDGE)"
+printf '{\n  "guard": { "mode": "observe" }\n}\n' > "$jc"
+guard_bridge
+t_assert "缺freeze节=零行" "0" "$(grep -c '^FREEZE' $BRIDGE)"
+
 rm -rf "$TMP"; t_done
