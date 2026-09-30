@@ -18,4 +18,23 @@ case " $FREEZE_LIST " in *" com.example.shared "*) t_assert "冲突包移出FREE
 t_assert "非冲突FREEZE保留" "com.example.only" "$FREEZE_LIST"
 t_assert "冲突计入LIST_BAD" "1" "$LIST_BAD"
 t_match  "detail含conflict" "conflict:com.example.shared" "$LIST_BAD_DETAIL"
+# 引擎巡检门控与存量杀 (spec §5/D1/D5)
+sed -n '/^freeze_active()/,/^}/p; /^freeze_reap()/,/^}/p' "$D/../engine/memory.sh" > /tmp/tf/fn.sh
+. /tmp/tf/fn.sh
+BR=/tmp/tf/guard.conf
+printf 'VERSION=1\nMODE=observe\nFREEZE_ENABLED=1\nFREEZE com.example.fz\n' > $BR
+t_assert "门: 桥开+有行" "1" "$(freeze_active $BR)"
+printf 'VERSION=1\nMODE=observe\nFREEZE com.example.fz\n' > $BR
+t_assert "门: 无ENABLED=0" "0" "$(freeze_active $BR)"
+printf 'VERSION=1\nMODE=observe\nFREEZE_ENABLED=1\n' > $BR
+t_assert "门: 有ENABLED无行=0" "0" "$(freeze_active $BR)"
+printf 'VERSION=1\nFREEZE_ENABLED=1\nFREEZE com.example.fz\n' > $BR
+t_assert "不存在包零输出" "" "$(freeze_reap $BR com.example.never.exists)"
+mkdir -p /tmp/fzbin
+printf '#!/bin/sh\necho 12345\n' > /tmp/fzbin/pgrep
+printf '#!/bin/sh\nexit 0\n' > /tmp/fzbin/am
+chmod +x /tmp/fzbin/pgrep /tmp/fzbin/am
+OUT=$(PATH=/tmp/fzbin:$PATH freeze_reap $BR com.example.fz)
+t_match "杀成功行格式" "12345|com.example.fz||FREEZE|engine reap" "$OUT"
+rm -rf /tmp/fzbin
 t_done
