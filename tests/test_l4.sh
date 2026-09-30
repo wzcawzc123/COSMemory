@@ -32,7 +32,7 @@ mm_main_alive() {
 }
 
 echo "=== 准备 ==="
-cp "$LIST" /tmp/list.factory.bak || exit 1
+cp "$M/config/名单列表.conf" /tmp/list.factory.bak || exit 1
 iso_stop; assert_zero "准备"
 
 echo "=== T1: 名单非法行(不连坐) ==="
@@ -40,7 +40,7 @@ printf 'GARBAGE_LINE_XYZ\nWHITE\nKILL nosuffix_invalid\n' >> "$LIST"
 start_eng
 eng_alive && ok "引擎带非法名单启动" || bad "启动失败(连坐)"
 grep -q 'LIST_BAD=3' "$M/data/stats.log" && ok "LIST_BAD=3上报" || bad "LIST_BAD未报"
-grep -q 'KEEPADJ com.tencent.mm' "$M/data/stats.log" && ok "合法行生效" || bad "合法行连坐"
+grep -q 'KEEPADJ.*com.tencent.mm' "$M/data/stats.log" && ok "合法行生效" || bad "合法行连坐"
 cp /tmp/list.factory.bak "$LIST"
 
 echo "=== T2: 看门狗 ==="

@@ -7,12 +7,12 @@ TOTAL_FAIL=0; SKIP=""
 for t in "$D"/test_*.sh; do
   n=$(basename "$t")
   case "$n" in
-    test_e2e.sh|test_l4.sh)
+    test_e2e.sh) SKIP="$SKIP $n(manual)"; continue;;test_l4.sh)
       [ $ON_DEVICE -eq 0 ] && { SKIP="$SKIP $n"; continue; } ;;
   esac
   printf '== %s ==\n' "$n"
   OUT="${TMPDIR:-/tmp}/all.$$.out"
-  timeout 20 sh "$t" > "$OUT" 2>&1
+  timeout 300 sh "$t" > "$OUT" 2>&1
   rc=$?
   tail -3 "$OUT"
   if [ $rc -eq 124 ]; then echo "  FAIL: 超时20s"

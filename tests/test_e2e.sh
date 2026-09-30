@@ -1,6 +1,6 @@
 #!/system/bin/sh
 # L2 因果验证: 引擎关/开 两段 adj 对比
-C=/data/local/tmp/eta/cosmem
+C=/data/adb/modules/COSMemory
 export STATS_LOG=$C/data/stats.log
 SNAP() {
   for d in /proc/[0-9]*; do

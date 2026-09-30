@@ -11,7 +11,7 @@ echo "1790648010.200 3483 I am_proc_died: [0,222,com.unknown.app,900,10]"
 echo "1790648020.300 3483 I am_proc_died: [0,333,com.tencent.mobileqq:MSF,905,10]"
 MK
 chmod 755 /tmp/tk_bin/logcat
-. /data/local/tmp/eta/cosmem/engine/attrib.sh
+. $(dirname "$0")/../engine/attrib.sh
 export STATS_LOG=$WORKDIR/stats.log; : > $STATS_LOG
 
 # 首次采集: 白名单两个死都收, 非白名单丢弃
