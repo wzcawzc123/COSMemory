@@ -62,7 +62,7 @@
 - [ ] **调参模块**：lmkd `device_config` / minfree / ZRAM（`tuning.enabled`，出厂关，改动可回滚）
 - [ ] **面板名单编辑器**：写操作需评估原子性与配置污染风险，晚于一切读功能
 - [x] **阶段二 · AMS hook spike 第 1 阶段（2026-09-29 完成，源码级侦查）**：jadx/baksmali 反编译设备真实 services.jar + oplus-services.jar → **杀链钉死**：`OomAdjuster.updateAndTrimProcessLSP` 三处杀点（cached/empty 超限 + empty 超时）全部被闸门 `onHookKillCacheEmpty(app)` 包住（**返回 true=免死**，源码证明）；Oplus 未旁路杀链（仅 Ext 注入策略），闸门现有实现=Athena 动态 Set（`skipCacheEmptyKill`），**配置路线排除、hook 路线确立**；双轨方案：A 轨 hook `ProcessRecord.killLocked` 按 reason 过滤（AOSP 通用）+ B 轨 hook `OomAdjusterExtImpl.onHookKillCacheEmpty`（ColorOS 更稳）。报告：[docs/spike-ams-hook-report.md](docs/spike-ams-hook-report.md)
-- [ ] **阶段二 · 第 1 步：LSPosed 打点模块**（只 log 不拦截）验证闸门调用频率/参数 → 立项实现
+- [x] **阶段二 · LSPosed hook**：已超额完成 — COSGuard(killLocked hooks=3, observe/guard双模) 2026-09-30 UAT PASS + 21.6h观察收数通过, guard已放量日用
 - [ ] **lmkd 裁决（2026-09-29 定案）**：不 hook lmkd（adj=200 已通过官方输入通道覆盖该防线，hook 解的是不存在的问题）；调参（minfree/device_config）留可选开关默认关，日常不碰厂商已调好的参数
 - [ ] ~~厂商豁免同步~~ no_frozen 路线已排除；待研究其他 ROM 豁免接口（按 L2 厂商层逐个探测）
 

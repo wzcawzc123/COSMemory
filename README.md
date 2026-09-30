@@ -116,6 +116,27 @@ FREEZE com.bloat.app
 | `freeze.enabled` | `true` | FREEZE 名单开关 |
 | `tuning.enabled` | `false` | 系统参数调优（lmkd/ZRAM）——**二期功能，出厂关** |
 
+## 🛡 阶段二 · AMS 防线（COSGuard）
+
+> v0.4.0 起内置。观察模式 21.6h 收数通过（134 条判定零异常、白名单全程保活），已切换拦截模式日用。
+
+**架构**：名单/memory.json → `service.sh` 生成配置桥 `/data/system/cosmem/guard.conf`（system 可读写）→ **COSGuard**（LSPosed，驻 system_server）快照缓存桥配置（5s mtime 热加载），hook `ProcessRecord.killLocked` 执行决策链（MODE→WHITE→BLOCK→FUSE→SKIP）→ 遥测 `guard.telemetry` → `service.sh` 按天归档 → `guard_stats.sh` 聚合 → WebUI「防线」页。单一事实源在 COSMemory 侧；桥缺失/解析失败一律 **fail-open（只记不拦）**。
+
+**guard.conf 字段**：
+
+| 字段 | 含义 |
+|---|---|
+| `VERSION` | 协议版本（当前 1），不符即 fail-open |
+| `MODE` | `observe` 只记录 / `guard` 拦截（由 `memory.json` 的 `guard.mode` 驱动，30s 热加载）|
+| `BLOCK` | 拦截规则集，默认 `o-stop,frozen,cached,empty,cpu` |
+| `WHITE <pkg>` | 白名单包，每行一个（KILL/FREEZE 不进桥）|
+
+**规则 → 系统杀因**：`o-stop`=Oplus 强停 · `frozen`=冻结同步异常 · `cached`/`empty`=缓存/空进程超限 · `cpu`=CPU 超限。**结构性永不拦截**：用户划卡（remove task）、isolated、解锁类——没有对应规则名，无法被配进拦截；`killbg` 仅测试注入用，默认集不含。
+
+**observe → guard 放量流程**：出厂 `observe`（只记录）→ 连续观察收数 → 误拦审查通过 → 面板「设置」切 `guard`（30 秒桥热加载生效，可随时切回）。
+
+**验收**：B1/B2/T1-T10 UAT 全过（T4 为 E6 环境降级 PASS），详见 `docs/superpowers/specs/uat-2026-09-30.md`；COSGuard APK 内附于发布包 `assets/`。
+
 ## 🔍 兼容与验证
 
 | 环境 | 状态 |
