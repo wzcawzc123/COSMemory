@@ -8,7 +8,9 @@ parse_lists() {
       action=$1; target=$2
       if (action=="WHITE" && target ~ /^[a-zA-Z][a-zA-Z0-9._]+(:.+)?$/) w=w target " "
       else if (action=="KILL" && target ~ /^[a-zA-Z][a-zA-Z0-9._]+:.+$/) k=k target " "
-      else if (action=="FREEZE" && target ~ /^[a-zA-Z][a-zA-Z0-9._]+(:.+)?$/) f=f target " "
+      else if (action=="FREEZE" && target ~ /^[a-zA-Z][a-zA-Z0-9._]+(:.+)?$/) {
+        if (!(target in fzset)) { fzset[target]=1; f=f target " " }
+      }
       else { bad++; detail=detail "L" NR ":" $0 "|" }
     }
     END {

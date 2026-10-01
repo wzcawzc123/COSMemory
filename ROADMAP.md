@@ -58,7 +58,7 @@
 ## 二期功能（v1.x，按需排期）
 
 - [ ] **激进回收档**：PSI 超阈值 + 内存水位低时按 adj 从高到低回收（`reclaim.aggressive`，出厂关）
-- [x] **FREEZE 名单实现**（v0.5.0）：在册即封杀 — 引擎存量杀+巡检（T-FREEZE ①③④⑤实测过）+ 拦拉起 hook（spec 设计完成, APK 待装机验证）；总闸 freeze.enabled、冲突双向拒绝
+- [x] **FREEZE 名单实现**（v0.5.0）：在册即封杀 — 引擎存量杀+巡检（T-FREEZE ①③④⑤实测过）+ 拦拉起 hook（T-FREEZE ②实测: startProcess=1, FREEZE_BLOCK 拦截、进程零创建）；总闸 freeze.enabled、冲突双向拒绝
 - [ ] **调参模块**：lmkd `device_config` / minfree / ZRAM（`tuning.enabled`，出厂关，改动可回滚）
 - [ ] **面板名单编辑器**：写操作需评估原子性与配置污染风险，晚于一切读功能
 - [x] **阶段二 · AMS hook spike 第 1 阶段（2026-09-29 完成，源码级侦查）**：jadx/baksmali 反编译设备真实 services.jar + oplus-services.jar → **杀链钉死**：`OomAdjuster.updateAndTrimProcessLSP` 三处杀点（cached/empty 超限 + empty 超时）全部被闸门 `onHookKillCacheEmpty(app)` 包住（**返回 true=免死**，源码证明）；Oplus 未旁路杀链（仅 Ext 注入策略），闸门现有实现=Athena 动态 Set（`skipCacheEmptyKill`），**配置路线排除、hook 路线确立**；双轨方案：A 轨 hook `ProcessRecord.killLocked` 按 reason 过滤（AOSP 通用）+ B 轨 hook `OomAdjusterExtImpl.onHookKillCacheEmpty`（ColorOS 更稳）。报告：[docs/spike-ams-hook-report.md](docs/spike-ams-hook-report.md)

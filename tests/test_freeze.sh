@@ -37,4 +37,15 @@ chmod +x /tmp/fzbin/pgrep /tmp/fzbin/am
 OUT=$(PATH=/tmp/fzbin:$PATH freeze_reap $BR com.example.fz)
 t_match "杀成功行格式" "12345|com.example.fz||FREEZE|engine reap" "$OUT"
 rm -rf /tmp/fzbin
+# 同包重复条目去重(桥单行)
+cat > /tmp/tf/dup.conf << 'CONF'
+{
+WHITE com.a
+FREEZE com.dup
+FREEZE com.dup
+FREEZE com.other
+}
+CONF
+eval "$(parse_lists /tmp/tf/dup.conf)"
+t_assert "FREEZE去重=单值" "com.dup com.other" "$FREEZE_LIST"
 t_done
