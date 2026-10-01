@@ -1,7 +1,7 @@
 <div align="center">
 <h1>COSMemory 内存管理</h1>
 
-![Version](https://img.shields.io/badge/version-v0.2-blue)
+![Version](https://img.shields.io/badge/version-v0.7.0-blue)
 ![License](https://img.shields.io/badge/license-GPLv3-green)
 ![ColorOS](https://img.shields.io/badge/ColorOS-15%20%7C%2016-brightgreen)
 ![Tested](https://img.shields.io/badge/实机验证-一加11%20%C2%B7%20CO16%20%C2%B7%20KSU-orange)
@@ -151,6 +151,10 @@ FREEZE com.bloat.app
 
 `memory.json` 的 `reclaim.aggressive` 打开后：内存压力（PSI 达标 **且** 余量低于下限，无 PSI 设备自动降级只看余量）时按档清理**非白名单**进程——白名单永远免疫，单轮封顶+冷却防抖。深度三档可选（缓存≥900 / +刚切走 / +空服务，面板设置页直接切），出厂关闭；改动 ≤8 秒热生效。
 
+### 面板名单编辑器（v0.7.0）
+
+名单页右上「编辑」进入编辑模式：**WHITE 保活 / KILL 点名杀 / FREEZE 封杀** 三组行内增删（删除带二次确认），表单内置**已装应用选择器**（应用名+图标，点选回填，清单由 COSGuard 自动生成，缺失自动降级手打包名）；防线页事件流每行可一键「＋FREEZE」拉黑（白名单冲突前端即拦）。写入走 `engine/listedit.sh`：格式校验与解析同源、改坏自动回滚、原子写入、落盘后配置桥即时再生成（hook ≤5 秒热载）。出厂名单保持保守空态，KILL 条目执行"逐条实测"门槛（2026-10-01 实测通过：杀→重拉→按 pid 冷却续杀）。
+
 ## 🔍 兼容与验证
 
 | 环境 | 状态 |
@@ -188,7 +192,7 @@ WebUI 依赖 KernelSU 的浏览器机制（Magisk 无此入口，需等二期 ht
 
 ## 🗺 路线图
 
-当前 **v0.2 发布就绪**，发布前检查清单（L3 日用数据 / SKIP 日志可见化 / 发布帖）与二期功能（激进回收 / FREEZE / 调参）见 **[ROADMAP.md](ROADMAP.md)**。
+当前 **v0.7.0**（名单编辑器 + KILL 逐条实测完成），**v1.0 收尾中**（guard/FREEZE 日用观察 2026-10-03 满 3 天 → 发布帖 → tag）。通用化三阶段（v1.0 本机封版 → OPPO 系横向扩展+社区群测 → 小米/三星跨生态）与发布前检查清单见 **[ROADMAP.md](ROADMAP.md)**。
 
 ## 📜 许可与署名
 
