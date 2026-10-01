@@ -76,9 +76,11 @@ hook: ConfigStore ≤5s mtime 热载 guard.conf。FREEZE 另受 freeze.enabled �
 - 前端单次 execRead: `cat apps.json` + 对所选行逐包 base64 cat icon (首屏上限 30 包,
   其余滚动按需) — 具体批量协议在 plan 定, 约束: 一次交互 ≤2 个 exec 调用。
 
-### 4.5 kill 历史联动 (S5)
-DefenseView killEvents 每行新增「加 FREEZE」: 取行 pkg → 复用 S2 list_add FREEZE <pkg>
-(同校验/D4 流程) → 成功行内变「已加」。act≠kill 的行不显示该钮 (仅实杀记录可拉黑)。
+### 4.5 防线事件联动 (S5)
+防线页事件流 (GuardStats.recent {ts,pkg,rule,act,reason}, 渲染于 DefenseView→GuardPanel)
+每行新增「加 FREEZE」: 取行 pkg → 复用 S2 list_add FREEZE <pkg> (同校验/D4 流程) →
+成功行内变「已加」。recent 行一律显示该钮 (act 实际值域 BLOCK/FUSE/ERROR/observe, 无 kill;
+拉黑意图与 act 无关, WHITE 冲突由 D4 前端拦截)。
 
 ## 5. 错误处理
 
