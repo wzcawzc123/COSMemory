@@ -1,5 +1,14 @@
 # 【更新日志】
 
+## v0.7.0 2026.10.01 (面板名单编辑器)
+- 名单页显式编辑模式: WHITE/KILL/FREEZE 三组增删, 行级二次确认, 组差异化表单
+- 已装应用选择器: COSGuard AppCatalog 生成 apps.json+第三方图标, 搜索/回填/降级手打
+- 防线事件流一键加 FREEZE (D4 包名级前端拦截)
+- 新增 engine/listedit.sh 写入层: 同源校验/parsefail 回滚/原子写/即时 guard_bridge 再生成
+- guard_bridge 抽取 engine/bridge.sh 共享 (service/listedit 双 source)
+- 修: 前端 FREEZE 带组解析 (对齐 awk); AppCatalog 数组头孤儿逗号
+- COSGuard v1.1.0 (versionCode 2): AppCatalog 30s 首建/refresh 触发/24h 兜底
+
 ## Richard8 2023.11.26
 - 更新ndk到r26b
 - 更新hllvm混淆
