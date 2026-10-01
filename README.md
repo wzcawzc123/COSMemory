@@ -143,6 +143,10 @@ FREEZE com.bloat.app
 
 **验收**：B1/B2/T1-T10 UAT 全过（T4 为 E6 环境降级 PASS），详见 `docs/superpowers/specs/uat-2026-09-30.md`；COSGuard APK 内附于发布包 `assets/`。
 
+### FREEZE 整包封杀（v0.5.0）
+
+名单加 `FREEZE <包名>` 即封杀：**在册期间**该包切到后台后由引擎巡检秒杀、拉起即拦（需 COSGuard v0.5+），移出条目 30 秒内自动解封。前台使用中不打扰（切走才执行）；`memory.json` 的 `freeze.enabled=false` 为总闸（关=全静默）；与 WHITE 同包 = 冲突双向拒绝（面板标红）。出厂 FREEZE 组为空，全部由你手动点名。
+
 ## 🔍 兼容与验证
 
 | 环境 | 状态 |

@@ -1,5 +1,5 @@
 {
-  "project": { "name": "COSMemory v0.4", "author": "是你吗薰儿" },
+  "project": { "name": "COSMemory v0.5", "author": "是你吗薰儿" },
   "keepAlive": { "adj": 200, "enforce": true },
   "reclaim": { "aggressive": false, "psiThreshold": 5.0,
                "maxKillPerRound": 5, "cooldownSec": 60 },

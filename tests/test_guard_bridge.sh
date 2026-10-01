@@ -42,6 +42,7 @@ t_assert "缺节回落 observe" "observe" "$mode"
 mkdir -p "$TMP/gb"; sed -n '/^guard_bridge()/,/^}/p' "$D/../service.sh" > "$TMP/gb/g.sh"
 MODDIR="$MOD"; BRIDGE_DIR="$TMP/gb"; BRIDGE="$TMP/gb/guard.conf"
 . "$TMP/gb/g.sh"
+LIST_PATH="$MOD/config/名单列表.conf"   # 桥读sdcard权威路径(2f9eb0d), 测试经LIST_PATH注入fixture
 printf '{\n  "freeze": { "enabled": true }\n}\n' > "$jc"
 printf '{\nWHITE com.tencent.mm\nFREEZE com.example.fz\n}\n' > "$MOD/config/名单列表.conf"
 guard_bridge

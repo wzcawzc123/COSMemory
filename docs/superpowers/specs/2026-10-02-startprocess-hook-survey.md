@@ -9,7 +9,7 @@
 |---|---|
 | `HOOK_CLASS` | `com.android.server.am.ActivityManagerService` |
 | `HOOK_METHOD` | `startProcessLocked` |
-| 参数类型表（8 参，Xposed 原样） | `String.class, ApplicationInfo.class, int.class, int.class, HostingRecord.class, int.class, boolean.class, boolean.class` |
+| 参数类型表（8 参，Xposed 原样） | `String.class, ApplicationInfo.class, boolean.class, int.class, HostingRecord.class, int.class, boolean.class, boolean.class`（**勘误 2026-10-01**: 第3参 smali=Z 即 boolean, 原表误写 int — 实机 NoSuchMethodException 后修正） |
 | 返回 | `ProcessRecord`（拦截 → `setResult(null)`） |
 | `PROCNAME_IDX` | **args[1]**（`ApplicationInfo.packageName`，整包语义）；args[0] 为进程名（含 `:子进程` 后缀，FREEZE 整包匹配时须剥后缀） |
 | 修饰符 | `final`（包私 final，方法体完整非 native/非 inline）→ Xposed `findAndHookMethod` 反射可达 ✓ |
