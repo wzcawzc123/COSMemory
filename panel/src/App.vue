@@ -174,7 +174,8 @@ onUnmounted(() => { if (timer) clearInterval(timer) })
       :stats="stats" :caps-entries="capsEntries" />
     <ListView v-else-if="activeTab === 'list'"
       :white="white" :list-raw="listRaw"
-      :freezeList="guard?.freezeList ?? []" />
+      :freezeList="guard?.freezeList ?? []"
+      :mod="MOD" @edited="refresh" />
     <SettingsView v-else
       :log-tail="logTail" :guard="guard" @set-guard-mode="setGuardMode" @set-reclaim="setReclaim" />
   </div>
