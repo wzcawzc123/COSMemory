@@ -54,8 +54,30 @@ while :; do
   detect_death "$WORKDIR/parsed.txt" "$WHITE_LIST"
   plan_keepalive "$WORKDIR/parsed.txt" "$WHITE_LIST" "$KEEPADJ_TARGET" > "$WORKDIR/acts"
   plan_reclaim   "$WORKDIR/parsed.txt" "$KILL_LIST" "$WORKDIR/cool" "$MAX_KILL" "$WHITE_LIST" >> "$WORKDIR/acts"
+# reclaim_cycle: 激进回收主循环段(可注入: MODDIR/PSI_PATH/MEMINFO_PATH/WORKDIR/CAP_PSI)
+reclaim_cycle() {
+  local rz R_AGG=0 R_DEPTH R_PSI_T R_FLOOR R_COOL
+  [ -f "$MODDIR/config/memory.json" ] || return 0
+  rz=$(sed -n '/"reclaim"/,/}/p' "$MODDIR/config/memory.json")
+  R_AGG=$(printf '%s' "$rz" | grep -c '"aggressive": true')
+  [ "$R_AGG" = 1 ] || return 0
+  R_DEPTH=$(printf '%s' "$rz" | sed -n 's/.*"depth": *"\([a-z]*\)".*/\1/p'); [ -n "$R_DEPTH" ] || R_DEPTH=cached
+  R_PSI_T=$(printf '%s' "$rz" | sed -n 's/.*"psiThreshold": *\([0-9.]*\).*/\1/p'); [ -n "$R_PSI_T" ] || R_PSI_T=5.0
+  R_FLOOR=$(printf '%s' "$rz" | sed -n 's/.*"memFloorMB": *\([0-9]*\).*/\1/p'); [ -n "$R_FLOOR" ] || R_FLOOR=1024
+  R_COOL=$(printf '%s' "$rz" | sed -n 's/.*"cooldownSec": *\([0-9]*\).*/\1/p'); [ -n "$R_COOL" ] || R_COOL=60
+  if [ "$(reclaim_should_fire "$(date +%s)" 1 "$R_PSI_T" "$R_FLOOR" "$R_COOL" "${CAP_PSI:-0}" "${PSI_PATH:-/proc/pressure/memory}" "${MEMINFO_PATH:-/proc/meminfo}" "$WORKDIR/reclaim.last")" = 1 ]; then
+    plan_aggressive "$WORKDIR/parsed.txt" "$WHITE_LIST" "$R_DEPTH" "${MAX_KILL:-5}" >> "$WORKDIR/acts"
+    date +%s > "$WORKDIR/reclaim.last"
+  fi
+  return 0
+}
+
+  reclaim_cycle
   grep '^KILL ' "$WORKDIR/acts" | while read -r _ pid _; do date +%s > "$WORKDIR/cool/$pid"; done
   apply_actions "$WORKDIR/acts" "$WORKDIR/state" >> "$STATS_LOG"
+  grep '^RECLAIM ' "$WORKDIR/acts" 2>/dev/null | while read -r _ rp pid_r pkg_r; do
+    echo "$(date +%s)|$pid_r|$pkg_r||RECLAIM|aggressive depth=${R_DEPTH:-cached}" >> "$TELEM_PATH"
+  done
   FRZ=$(freeze_reap "$BRIDGE_PATH" $FREEZE_LIST 2>/dev/null)
   [ -n "$FRZ" ] && echo "$FRZ" >> "$TELEM_PATH" 2>/dev/null
   [ "$full" = 1 ] && capture_kills "$WHITE_LIST"

@@ -38,5 +38,38 @@ t_match  "service档: 含svc"       "RECLAIM 222 com.b.app" "$OUT"
 t_assert "service档: 白名单仍免疫" "0" "$(echo "$OUT" | grep -c '333')"
 OUT=$(plan_aggressive $T/parsed "" cached 1)
 t_assert "cap=1只杀1个"           "1" "$(echo "$OUT" | grep -c '^RECLAIM')"
+# apply_actions RECLAIM 分支 (exec.sh): 不存在pid → missing=1 (区别于default的write=1)
+. "$D/../engine/exec.sh"
+printf 'RECLAIM 999999 test_reclaim.app 200\n' > $T/acts2
+OUT=$(apply_actions $T/acts2 $T/st 2>/dev/null)
+t_match "RECLAIM进执行分支(missing=1)" "missing=1" "$OUT"
+t_assert "非default分支(write=0)" "0" "$(printf '%s' "$OUT" | sed -n 's/.*write=\([0-9]*\).*/\1/p')"
+# ---- 模拟完整链(spec §6): 注入配置/PSI/水位 驱动 reclaim_cycle ----
+sed -n '/^reclaim_cycle()/,/^}/p' "$D/../engine/memory.sh" > $T/rc.sh
+. $T/rc.sh
+MK=$T/mod; mkdir -p $MK/config
+printf '{ "reclaim": { "aggressive": true, "depth": "service", "psiThreshold": 5.0, "memFloorMB": 1024, "cooldownSec": 60 } }\n' > $MK/config/memory.json
+WD=$T/wd; mkdir -p $WD
+printf 'svc|SVC|555|com.z.app\ncch|CAC|666|com.tencent.mm\n' > $WD/parsed.txt
+: > $WD/acts
+printf 'some avg10=9.00 avg60=4.00\n' > $T/psi2
+printf 'MemAvailable:  300000 kB\n' > $T/mem2
+run_rc() {
+  MODDIR=$MK WORKDIR=$WD WHITE_LIST="com.tencent.mm" MAX_KILL=5 CAP_PSI=1 \
+    PSI_PATH=$T/psi2 MEMINFO_PATH=$T/mem2 TELEM_PATH=$T/telem reclaim_cycle
+}
+run_rc
+t_match  "模拟链: acts产出RECLAIM" "RECLAIM 555 com.z.app" "$(cat $WD/acts)"
+t_assert "模拟链: 白名单免疫" "0" "$(grep -c 666 $WD/acts)"
+t_assert "模拟链: 深度=service命中svc" "1" "$(grep -c '555' $WD/acts)"
+t_assert "冷却时间戳落盘" "1" "$([ -f $WD/reclaim.last ] && echo 1 || echo 0)"
+: > $WD/acts
+run_rc
+t_assert "冷却节流: 二跑零新增" "0" "$(grep -c RECLAIM $WD/acts)"
+# 总闸关
+printf '{ "reclaim": { "aggressive": false, "depth": "cached" } }\n' > $MK/config/memory.json
+rm -f $WD/reclaim.last
+run_rc
+t_assert "总闸关: 零动作" "0" "$(grep -c RECLAIM $WD/acts)"
 rm -rf $T
 t_done

@@ -27,12 +27,12 @@ apply_actions() {
         fa=$((fa+1)); fw=$((fw+1))
       fi
       ;;
-    KILL)
+    KILL|RECLAIM)
       pid=$a; pkg=$b
       [ -d "/proc/$pid" ] || { fa=$((fa+1)); fm=$((fm+1)); continue; }
       cur=$(tr '\0' ' ' < /proc/$pid/cmdline 2>/dev/null)
       case "$cur" in (*"$pkg"*) ;; (*) fa=$((fa+1)); fx=$((fx+1)); continue;; esac
-      if kill -9 "$pid" 2>/dev/null; then ki=$((ki+1)); log_stat "KILL $pid $pkg"
+      if kill -9 "$pid" 2>/dev/null; then ki=$((ki+1)); log_stat "$op $pid $pkg"
       else fa=$((fa+1)); fw=$((fw+1)); fi
       ;;
     SKIP)
