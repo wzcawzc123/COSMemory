@@ -4,6 +4,7 @@ import { parseListConf, validateEdit, buildTarget, type ListGroup } from '../com
 import { detectBridge } from '../composables/ksu'
 import { listEdit } from '../composables/listedit-client'
 import { guardName } from '../composables/guard'
+import AppPicker from '../components/AppPicker.vue'
 
 const props = defineProps<{
   white: { pkg: string; adj: number | null; states: string[] }[]
@@ -26,6 +27,7 @@ const editing = ref(false); const busy = ref(false); const err = ref('')
 const adding = ref<ListGroup | null>(null)
 const formPkg = ref(''); const formSuffix = ref(''); const formErr = ref('')
 const confirming = ref('')   // `${group}:${target}`
+const picker = ref(false)
 
 async function apply(op: 'add' | 'del', g: ListGroup, target: string): Promise<boolean> {
   const b = detectBridge()
@@ -95,6 +97,7 @@ function toggleEdit() {
           <input v-model="formPkg" placeholder="包名 com.xx.yy" />
           <input v-if="g.key !== 'white'" v-model="formSuffix"
                  :placeholder="g.key === 'kill' ? '进程后缀 :push' : '组 (可选) :group-black'" />
+          <button @click="picker = true" :disabled="busy">从已装应用选</button>
           <button @click="submitAdd" :disabled="busy">确定</button>
           <button @click="adding = null">取消</button>
           <div class="lc-err lc-formerr" v-if="formErr">校验: {{ formErr }}</div>
@@ -106,6 +109,8 @@ function toggleEdit() {
       <div v-for="t in conf.bad" :key="t" class="lc-line lc-bad">{{ t }}</div>
     </div>
     <div v-if="!conf.raw" class="gd-empty">名单文件未读取到</div>
+    <AppPicker :open="picker" @close="picker = false"
+      @select="(pk) => { formPkg = pk; formErr = ''; picker = false }" />
   </div>
 </template>
 
