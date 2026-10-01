@@ -93,7 +93,14 @@ plan_aggressive() {
   while IFS='|' read -r state proc pid pkg; do
     [ -z "$pkg" ] && continue
     depth_match "$state" "$3" || continue
-    is_protected "$state" && continue
+    # v0.7.2: prev 属 PROTECTED, 曾使 previous/service 档名不副实 —
+    # 档位明确纳入 prev* 时放行刚切走的; 其余保护态照挡 (fg/vis 等 depth_match 已不匹配, 此处兜底)
+    if is_protected "$state"; then
+      case "$3:$state" in
+        previous:prev*|service:prev*) ;;
+        *) continue ;;
+      esac
+    fi
     w_hit=0
     for w in $2; do
       if [ "$pkg" = "$w" ]; then w_hit=1; break; fi

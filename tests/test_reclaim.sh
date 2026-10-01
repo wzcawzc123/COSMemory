@@ -36,6 +36,19 @@ t_assert "cached档: 不含svc"      "0" "$(echo "$OUT" | grep -c '222')"
 OUT=$(plan_aggressive $T/parsed "com.tencent.mm" service 5)
 t_match  "service档: 含svc"       "RECLAIM 222 com.b.app" "$OUT"
 t_assert "service档: 白名单仍免疫" "0" "$(echo "$OUT" | grep -c '333')"
+# previous/service 档放行 prev (v0.7.2: prev 在 PROTECTED 内曾致 previous 档名不副实)
+cat > $T/parsed2 << 'PF'
+prev|PREV|555|com.c.justleft
+cch+10|CAC|111|com.a.app
+fg|TOP|444|com.hot.app
+PF
+OUT=$(plan_aggressive $T/parsed2 "" previous 5)
+t_assert "previous档: 放行刚切走"   "1" "$(echo "$OUT" | grep -c '555')"
+OUT=$(plan_aggressive $T/parsed2 "" service 5)
+t_assert "service档: prev也放行"    "1" "$(echo "$OUT" | grep -c '555')"
+OUT=$(plan_aggressive $T/parsed2 "" cached 5)
+t_assert "cached档: prev仍保护"     "0" "$(echo "$OUT" | grep -c '555')"
+t_assert "cached档: fg永不清"       "0" "$(echo "$OUT" | grep -c '444')"
 OUT=$(plan_aggressive $T/parsed "" cached 1)
 t_assert "cap=1只杀1个"           "1" "$(echo "$OUT" | grep -c '^RECLAIM')"
 # apply_actions RECLAIM 分支 (exec.sh): 不存在pid → missing=1 (区别于default的write=1)

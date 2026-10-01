@@ -18,6 +18,12 @@ const pending = ref(false)          // 确认态
 const pendingR = ref(false)
 const raOn = ref(false)
 const raDepth = ref('cached')
+// v0.7.2: 引擎术语 → 直白档位 (温和=cached只清缓存 / 标准=+prev刚切走 / 彻底=+svc空服务)
+const DEPTH_LABEL: Record<string, [string, string]> = {
+  cached: ['温和', '只清闲置最久的缓存进程'],
+  previous: ['标准', '刚切到后台的也会清'],
+  service: ['彻底', '连空服务进程一起清'],
+}
 watch(() => props.guard?.reclaimAggressive, v => { if (v !== undefined) raOn.value = v }, { immediate: true })
 watch(() => props.guard?.reclaimDepth, v => { if (v) raDepth.value = v }, { immediate: true })
 function toggleReclaim() {
@@ -81,7 +87,7 @@ onMounted(async () => {
   <div class="card st-mode">
     <div class="st-mode-row">
       <div>
-        <div class="name">{{ raOn ? '激进回收开 · ' + raDepth : '激进回收关' }}</div>
+        <div class="name">{{ raOn ? '激进回收开 · ' + (DEPTH_LABEL[raDepth]?.[0] ?? raDepth) : '激进回收关' }}</div>
         <div class="meta">内存压力时按档清理非白名单(白名单免疫), ≤8 秒热生效</div>
       </div>
       <button class="st-switch" :class="{ on: raOn }" @click="toggleReclaim">
@@ -91,9 +97,10 @@ onMounted(async () => {
     <div class="st-mode-row" v-if="raOn" style="margin-top:10px">
       <div class="meta">回收深度</div>
       <div class="st-seg" style="width:auto">
-        <button v-for="d in [['cached','缓存≥900'],['previous','+刚切走'],['service','+空服务']]" :key="d[0]"
+        <button v-for="d in [['cached','温和'],['previous','标准'],['service','彻底']]" :key="d[0]"
           class="st-seg-b" :class="{ on: raDepth === d[0] }" @click="pickDepth(d[0])">{{ d[1] }}</button>
       </div>
+      <div class="meta" style="margin-top:6px">{{ DEPTH_LABEL[raDepth]?.[1] }}</div>
     </div>
   </div>
 
