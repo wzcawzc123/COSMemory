@@ -42,6 +42,7 @@ const fmtHour = (h: number) => String(h).padStart(2, '0') + ':00'
         <div class="gd-num"><b>{{ stats.today.error }}</b><i>异常</i></div>
         <div class="gd-num"><b>{{ stats.today.pass_observe }}</b><i>观察记录</i></div>
         <div class="gd-num"><b>{{ stats.freezeToday }}</b><i>今日封杀</i></div>
+        <div class="gd-num"><b>{{ stats.reclaimToday }}</b><i>今日激进</i></div>
       </div>
     </div>
 
@@ -116,7 +117,7 @@ const fmtHour = (h: number) => String(h).padStart(2, '0') + ':00'
 .gd-wrap{display:flex;flex-direction:column;gap:10px}
 .gd-hero{display:flex;flex-direction:column;gap:10px}
 .gd-pills{display:flex;gap:6px;flex-wrap:wrap}
-.gd-nums{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.gd-nums{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}
 .gd-num{text-align:center}.gd-num b{font-size:22px;display:block}
 .gd-num i{font-style:normal;font-size:11px;color:var(--ink2,#888)}
 .gd-bars{width:100%;height:64px;display:block}

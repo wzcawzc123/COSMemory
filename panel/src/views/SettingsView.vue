@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { themeMode, setTheme, type ThemeMode } from '../composables/theme'
 import { detectBridge, execRead } from '../composables/ksu'
 import type { GuardStats } from '../composables/guard'
 
 const props = defineProps<{ logTail: string[]; guard: GuardStats | null }>()
-const emit = defineEmits<{ (e: 'set-guard-mode', v: boolean): void }>()
+const emit = defineEmits<{ (e: 'set-guard-mode', v: boolean): void; (e: 'set-reclaim', p: { aggressive?: boolean; depth?: string }): void }>()
 
 // ---- 外观 ----
 const THEMES: { v: ThemeMode; label: string }[] = [
@@ -15,6 +15,17 @@ const THEMES: { v: ThemeMode; label: string }[] = [
 // ---- 模式开关 ----
 const mode = ref(props.guard?.mode ?? 'observe')
 const pending = ref(false)          // 确认态
+const pendingR = ref(false)
+const raOn = ref(false)
+const raDepth = ref('cached')
+watch(() => props.guard?.reclaimAggressive, v => { if (v !== undefined) raOn.value = v }, { immediate: true })
+watch(() => props.guard?.reclaimDepth, v => { if (v) raDepth.value = v }, { immediate: true })
+function toggleReclaim() {
+  if (!pendingR.value) { pendingR.value = true; return }
+  pendingR.value = false
+  emit('set-reclaim', { aggressive: !raOn.value })
+}
+function pickDepth(d: string) { raDepth.value = d; emit('set-reclaim', { depth: d }) }
 function toggleMode() {
   if (props.guard?.mode !== 'observe' && props.guard?.mode !== 'guard') return
   if (!pending.value) { pending.value = true; return }   // 第一次点=进入确认
@@ -62,6 +73,27 @@ onMounted(async () => {
     <div v-if="pending" class="st-hint">
       切换后 30s 内经配置桥生效（无需重启）。{{ mode === 'guard' ? '将开始真实拦截。' : '回到只记录。' }}
       <button class="st-cancel" @click="cancelConfirm">取消</button>
+    </div>
+  </div>
+
+  <!-- 激进回收 -->
+  <div class="sec"><div class="b"><svg class="si" viewBox="0 0 24 24"><use href="#i-cpu-fill"/></svg></div><h2>激进回收</h2></div>
+  <div class="card st-mode">
+    <div class="st-mode-row">
+      <div>
+        <div class="name">{{ raOn ? '激进回收开 · ' + raDepth : '激进回收关' }}</div>
+        <div class="meta">内存压力时按档清理非白名单(白名单免疫), ≤8 秒热生效</div>
+      </div>
+      <button class="st-switch" :class="{ on: raOn }" @click="toggleReclaim">
+        <i /><span v-if="pendingR" class="st-confirm">确认?</span>
+      </button>
+    </div>
+    <div class="st-mode-row" v-if="raOn" style="margin-top:10px">
+      <div class="meta">回收深度</div>
+      <div class="st-seg" style="width:auto">
+        <button v-for="d in [['cached','缓存≥900'],['previous','+刚切走'],['service','+空服务']]" :key="d[0]"
+          class="st-seg-b" :class="{ on: raDepth === d[0] }" @click="pickDepth(d[0])">{{ d[1] }}</button>
+      </div>
     </div>
   </div>
 

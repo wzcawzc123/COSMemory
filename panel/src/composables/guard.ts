@@ -10,6 +10,9 @@ export interface GuardStats {
   recent: { ts: number; pkg: string; rule: string; act: string; reason: string }[]
   dates: string[]
   freezeToday: number
+  reclaimToday: number
+  reclaimAggressive: boolean
+  reclaimDepth: string
   freezeList: { pkg: string; alive: boolean }[]
 }
 
@@ -43,6 +46,9 @@ export function parseGuard(json: string): GuardStats | null {
       recent: Array.isArray(o.recent) ? o.recent : [],
       dates: Array.isArray(o.dates) ? o.dates.map(String) : [],
       freezeToday: Number(o.freezeToday ?? 0),
+      reclaimToday: Number(o.reclaimToday ?? 0),
+      reclaimAggressive: !!o.reclaimAggressive,
+      reclaimDepth: String(o.reclaimDepth ?? "cached"),
       freezeList: Array.isArray(o.freezeList)
         ? o.freezeList.map((x: { pkg?: unknown; alive?: unknown }) =>
             ({ pkg: String(x?.pkg ?? ''), alive: !!x?.alive })) : [],

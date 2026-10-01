@@ -61,3 +61,18 @@ describe('freeze fields', () => {
     expect(g.freezeList).toEqual([])
   })
 })
+
+describe('reclaim field', () => {
+  it('parses reclaimToday', () => {
+    const g = parseGuard('{"date":"d","mode":"guard","reclaimToday":4}')!
+    expect(g.reclaimToday).toBe(4)
+  })
+  it('defaults 0', () => {
+    expect(parseGuard('{"date":"d"}')!.reclaimToday).toBe(0)
+  })
+  it('parses aggressive/depth display', () => {
+    const g = parseGuard('{"date":"d","reclaimAggressive":true,"reclaimDepth":"previous"}')!
+    expect(g.reclaimAggressive).toBe(true)
+    expect(g.reclaimDepth).toBe('previous')
+  })
+})

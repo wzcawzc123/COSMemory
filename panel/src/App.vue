@@ -119,6 +119,32 @@ async function setGuardMode(toGuard: boolean) {
   } catch (e) { error.value = String(e) }
 }
 
+/** 设置页激进回收: sed节内定向写(引擎每轮热读≤8s), 回读验证(防空回读教训) */
+async function setReclaim(patch: { aggressive?: boolean; depth?: string }) {
+  const b = bridge.value
+  if (!b) { error.value = '无 KSU 桥'; return }
+  try {
+    if (patch.aggressive !== undefined) {
+      const to = patch.aggressive ? 'true' : 'false'
+      const from = patch.aggressive ? 'false' : 'true'
+      await execRead(b, `sed -i '/"reclaim"/,/}/s/"aggressive": ${from}/"aggressive": ${to}/' ${MOD}/config/memory.json`)
+    }
+    if (patch.depth !== undefined) {
+      await execRead(b, `sed -i '/"reclaim"/,/}/s/"depth": "[a-z]*"/"depth": "${patch.depth}"/' ${MOD}/config/memory.json`)
+    }
+    const back = await execRead(b, `sed -n '/"reclaim"/,/}/p' ${MOD}/config/memory.json`)
+    const ok = patch.depth !== undefined
+      ? back.includes(`"depth": "${patch.depth}"`)
+      : back.includes(`"aggressive": ${patch.aggressive ? 'true' : 'false'}`)
+    if (ok) {
+      error.value = ''
+      if (guard.value) guard.value = { ...guard.value,
+        reclaimAggressive: back.includes('"aggressive": true'),
+        reclaimDepth: (back.match(/"depth": "([a-z]*)"/) ?? [])[1] ?? 'cached' }
+    } else error.value = '激进回收写入失败: 回读不符'
+  } catch (e) { error.value = String(e) }
+}
+
 onMounted(() => { initTheme(); refresh(); timer = window.setInterval(refresh, 5000) })
 onUnmounted(() => { if (timer) clearInterval(timer) })
 
@@ -150,7 +176,7 @@ onUnmounted(() => { if (timer) clearInterval(timer) })
       :white="white" :list-raw="listRaw"
       :freezeList="guard?.freezeList ?? []" />
     <SettingsView v-else
-      :log-tail="logTail" :guard="guard" @set-guard-mode="setGuardMode" />
+      :log-tail="logTail" :guard="guard" @set-guard-mode="setGuardMode" @set-reclaim="setReclaim" />
   </div>
 
   <!-- 底部导航 5 键 -->

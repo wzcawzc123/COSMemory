@@ -81,11 +81,15 @@ END {
 
 # FREEZE 字段 (Task 4): freezeToday=当日 FREEZE+FREEZE_BLOCK; freezeList=桥行+parsed 判活
 FZT=$(awk -F'|' '$5=="FREEZE" || $5=="FREEZE_BLOCK" {n++} END{print n+0}' "$SRC")
+RCT=$(awk -F'|' '$5=="RECLAIM" {n++} END{print n+0}' "$SRC")
+RZ=$(sed -n '/"reclaim"/,/}/p' "$D/../config/memory.json" 2>/dev/null)
+RA=$(printf '%s' "$RZ" | grep -c '"aggressive": true')
+RD=$(printf '%s' "$RZ" | sed -n 's/.*"depth": *"\([a-z]*\)".*/\1/p'); [ -n "$RD" ] || RD=cached
 FZ=""
 for p in $(sed -n 's/^FREEZE //p' "$BRIDGE" 2>/dev/null); do
   alive=false
   [ -f "$PARSED" ] && awk -F'|' -v p="$p" '$4==p{f=1} END{exit !f}' "$PARSED" && alive=true
   FZ="$FZ${FZ:+,}{\"pkg\":\"$p\",\"alive\":$alive}"
 done
-printf '%s,"freezeToday":%s,"freezeList":[%s],"dates":[%s]}\n' "$BODY" "$FZT" "$FZ" "$DATES"
+printf '%s,"freezeToday":%s,"freezeList":[%s],"reclaimToday":%s,"reclaimAggressive":%s,"reclaimDepth":"%s","dates":[%s]}\n' "$BODY" "$FZT" "$FZ" "$RCT" "$RA" "$RD" "$DATES"
 rm -f "$SRC"
