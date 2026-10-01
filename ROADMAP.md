@@ -14,7 +14,8 @@
 
 | 维度 | 状态 | 说明 |
 |---|---|---|
-| 单元测试 | ✅ 19 断言 | 解析/名单/决策/执行/桥接（Linux + 设备双端） |
+| 单元测试 | ✅ 三端全量 | shell 全套 total_fail=0（含 test_listedit 27 断言）+ vitest 68 + JUnit 37 |
+| **KILL 逐条实测** | ✅ 2026-10-01 | 决策层单测（正向命中 + WHITE pkg:* 豁免 SKIP whitelist）+ 真机端到端（heytap.health:SportDaemonService 杀→系统重拉→按 pid 冷却续杀, stats 明细 KILLED=1×2, 归因实锤）；编辑器 add/del 全链, 测后 conf 还原出厂 KILL=0 |
 | L1 存活 | ✅ | 引擎常驻 + CPU 空闲近 0 |
 | L2 因果 | ✅ | 引擎关 adj=905 → 开 adj=200 → 触发后再纠正 |
 | L4 破坏性 | ✅ 20/20 | 名单容错不连坐 / 看门狗 5s 拉起 / 哨兵停机零写入 / exit 9 / 白名单拒杀 |
