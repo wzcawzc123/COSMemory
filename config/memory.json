@@ -2,7 +2,7 @@
   "project": { "name": "COSMemory v0.6", "author": "是你吗薰儿" },
   "keepAlive": { "adj": 200, "enforce": true },
   "reclaim": { "aggressive": false, "depth": "cached", "psiThreshold": 5.0, "memFloorMB": 1024, "cooldownSec": 60,
-               "maxKillPerRound": 5, "cooldownSec": 60 },
+               "maxKillPerRound": 5 },
   "freeze": { "enabled": true },
   "guard": { "mode": "observe", "block_rules": "o-stop,frozen,cached,empty,cpu" },
   "tuning": { "enabled": false },
