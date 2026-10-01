@@ -11,7 +11,12 @@ OUT="/workspace/COSMemory_${VER}.zip"; rm -f "$OUT"
 STAGE="$STAGE" OUT="$OUT" APK="$APK" python3 - <<'PY'
 import zipfile, os
 stage, out, apk = os.environ['STAGE'], os.environ['OUT'], os.environ['APK']
-skip = {'panel/node_modules', '.git', 'docs', 'tests', 'module', 'image'}
+skip = {'panel/node_modules', 'panel/dist', '.git', 'docs', 'tests', 'module', 'image',
+        'data', '.gitignore', 'changelog.md', 'version.json', 'magisk.sh', 'tools',
+        'deploy_clean.sh', 'forensic.sh', 'watchdog_test.sh', 'restart_engine.sh',
+        'panel/package-lock.json',
+        'config/JSON-CONFIG.md', 'config/JSON-CONFIG-zh.md', 'config/JSON-CONFIG-ru.md',
+        'config/README.md'}
 n = 0
 with zipfile.ZipFile(out, 'w', zipfile.ZIP_DEFLATED) as z:
     for dp, dns, fns in os.walk(stage):
