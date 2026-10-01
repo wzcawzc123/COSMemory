@@ -59,12 +59,18 @@
 
 - [x] **激进回收档**（v0.6.0）：触发=PSI≥阈值 AND 水位<下限(CAP_PSI=0 降级单看水位)；深度三档可配、白名单免疫、单轮封顶+冷却；T-R1 真机强制触发/白名单零伤亡/T-R2 静默/模拟链全过
 - [x] **FREEZE 名单实现**（v0.5.0）：在册即封杀 — 引擎存量杀+巡检（T-FREEZE ①③④⑤实测过）+ 拦拉起 hook（T-FREEZE ②实测: startProcess=1, FREEZE_BLOCK 拦截、进程零创建）；总闸 freeze.enabled、冲突双向拒绝
-- [ ] **调参模块**：lmkd `device_config` / minfree / ZRAM（`tuning.enabled`，出厂关，改动可回滚）
-- [ ] **面板名单编辑器**：写操作需评估原子性与配置污染风险，晚于一切读功能
+- [ ] **调参模块**（2026-10-01 复议改判，随通用化目标）：不砍，挂 **Phase 1（OPPO系）** — 原"本机不碰厂商参数"论据在通用机型语境下失效（OEM 调参参差不齐, lmkd/ZRAM 正是通用痛点）；准入门槛=回滚三件套（存在性探测→探测不到只读/隐藏 + 改前快照 + 一键还原），Phase 1 先落**只读观测窗**（lmkd/ZRAM 当前值展示），可写锁在三件套后；v1.0 不带此功能
+- [x] **面板名单编辑器**（v0.7.0，2026-10-01）：显式编辑模式（WHITE/KILL/FREEZE 三组增删+行级二次确认）+ 已装应用选择器（COSGuard AppCatalog: apps.json 561应用+第三方图标79张, 30s首建/refresh触发/24h兜底）+ 防线事件一键加 FREEZE（D4 包名级前端拦截）；写入层 engine/listedit.sh（同源校验/parsefail回滚/原子mv/即时guard_bridge, test_listedit 27断言）；修 FREEZE 带组解析、AppCatalog 数组头孤儿逗号；真机 UI 链全绿（screencap 逐屏验收）
 - [x] **阶段二 · AMS hook spike 第 1 阶段（2026-09-29 完成，源码级侦查）**：jadx/baksmali 反编译设备真实 services.jar + oplus-services.jar → **杀链钉死**：`OomAdjuster.updateAndTrimProcessLSP` 三处杀点（cached/empty 超限 + empty 超时）全部被闸门 `onHookKillCacheEmpty(app)` 包住（**返回 true=免死**，源码证明）；Oplus 未旁路杀链（仅 Ext 注入策略），闸门现有实现=Athena 动态 Set（`skipCacheEmptyKill`），**配置路线排除、hook 路线确立**；双轨方案：A 轨 hook `ProcessRecord.killLocked` 按 reason 过滤（AOSP 通用）+ B 轨 hook `OomAdjusterExtImpl.onHookKillCacheEmpty`（ColorOS 更稳）。报告：[docs/spike-ams-hook-report.md](docs/spike-ams-hook-report.md)
 - [x] **阶段二 · LSPosed hook**：已超额完成 — COSGuard(killLocked hooks=3, observe/guard双模) 2026-09-30 UAT PASS + 21.6h观察收数通过, guard已放量日用
 - [ ] **lmkd 裁决（2026-09-29 定案）**：不 hook lmkd（adj=200 已通过官方输入通道覆盖该防线，hook 解的是不存在的问题）；调参（minfree/device_config）留可选开关默认关，日常不碰厂商已调好的参数
 - [ ] ~~厂商豁免同步~~ no_frozen 路线已排除；待研究其他 ROM 豁免接口（按 L2 厂商层逐个探测）
+
+## 通用化路线（2026-10-01 用户定调）
+
+- **Phase 0 · v1.0 本机封版**（本周）：10-03 guard/FREEZE 日用满 3 天 → 发帖 → tag v1.0（一加11 跑通为先）。
+- **Phase 1 · v1.x OPPO 系横向扩展**：架构分层（ColorOS 通用层 vs 机型特化层）→ 能力矩阵报告（装机体检）→ 调参观测窗（只读）→ 兼容声明扩至 OPPO/一加/realme · ColorOS 15-16（不匹配警告不硬拦）；**验证=社区群测**（用户拉群，机型矩阵后补；开发机暂只有一加11，Phase 1 中不依赖第二台机器的部分先行）。
+- **Phase 2 · v2.x 跨生态（小米/三星）**：每家一次独立杀链侦查 spike（MIUI/HyperOS、OneUI 各自定制杀后台逻辑, hook 点完全不同, 复用 AMS spike 方法论）；调参需避让 MIUI 内存扩展 / 三星 RAM Plus（ZRAM 变体冲突）。
 
 ## 已知限制（发布帖引用）
 
