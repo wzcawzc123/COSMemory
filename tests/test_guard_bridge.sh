@@ -38,8 +38,10 @@ mode=$(sed -n 's/.*"mode" *: *"\([^"]*\)".*/\1/p' "$jc" | head -1)   # guard 是
 [ "$mode" = guard ] || mode=observe
 t_assert "缺节回落 observe" "observe" "$mode"
 
-# FREEZE 桥行 (spec §4.2 桥即状态) — 片段 source 真调 service.sh guard_bridge
-mkdir -p "$TMP/gb"; sed -n '/^guard_bridge()/,/^}/p' "$D/../service.sh" > "$TMP/gb/g.sh"
+# FREEZE 桥行 (spec §4.2 桥即状态) — guard_bridge 已抽 engine/bridge.sh (list-editor T1), 自新家提取
+t_assert "service.sh source bridge.sh" "1" "$(grep -c 'engine/bridge.sh' "$D/../service.sh")"
+mkdir -p "$TMP/gb"; sed -n '/^guard_bridge()/,/^}/p' "$D/../engine/bridge.sh" > "$TMP/gb/g.sh"
+[ -s "$TMP/gb/g.sh" ] || { echo "FAIL: bridge.sh 提取为空"; exit 1; }
 MODDIR="$MOD"; BRIDGE_DIR="$TMP/gb"; BRIDGE="$TMP/gb/guard.conf"
 . "$TMP/gb/g.sh"
 LIST_PATH="$MOD/config/名单列表.conf"   # 桥读sdcard权威路径(2f9eb0d), 测试经LIST_PATH注入fixture
