@@ -10,6 +10,13 @@ if [ -d "$OLDDATA" ] && [ ! -d "$MODPATH/data" ]; then
     && ui_print "- 已迁移运行时数据 (state/统计历史保留)"
 fi
 
+# 1.5) 用户配置迁移 — 覆盖更新保留拦截模式/激进回收/阈值偏好 (出厂默认仅全新安装生效)
+OLDCFG="/data/adb/modules/COSMemory/config/memory.json"
+if [ -f "$OLDCFG" ] && [ -f "$MODPATH/config/memory.json" ]; then
+  cp "$OLDCFG" "$MODPATH/config/memory.json" 2>/dev/null \
+    && ui_print "- 已保留用户配置 (拦截模式/激进回收/阈值)"
+fi
+
 # 2) 名单目录初始化 / 旧配置迁移
 mkdir -p "$OUTDIR"
 [ -f "$OUTDIR/名单列表.conf" ] || cp "$MODPATH/config/名单列表.conf" "$OUTDIR/"

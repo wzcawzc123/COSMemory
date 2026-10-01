@@ -131,7 +131,7 @@ onMounted(async () => {
   <div class="sec"><div class="b"><svg class="si" viewBox="0 0 24 24"><use href="#i-award-fill"/></svg></div><h2>关于</h2></div>
   <div class="card st-about">
     <div class="st-about-t">COSMemory <b>v{{ ver }}</b></div>
-    <div class="st-about-s">白名单保活 + 智能回收 · 阶段二「AMS防线」</div>
+    <div class="st-about-s">白名单保活 + 智能回收 + AMS 防线</div>
     <div class="st-about-line">作者：<b>是你吗薰儿</b></div>
     <div class="st-about-line">
       基于 <a href="https://github.com/OneB1ank/A1Memory" target="_blank" rel="noreferrer">

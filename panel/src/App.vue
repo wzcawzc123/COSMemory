@@ -3,7 +3,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { detectBridge, execRead, type KsuBridge } from './composables/ksu'
 import { parseStats, parseCaps, whiteStatus, CAP_LABELS, type DayStats } from './composables/stats'
 import { parseGuard, guardDate, type GuardStats } from './composables/guard'
-import { initTheme } from './composables/theme'
+import { initTheme, syncThemeFromModule } from './composables/theme'
 import DashboardView from './views/DashboardView.vue'
 import DefenseView from './views/DefenseView.vue'
 import SystemView from './views/SystemView.vue'
@@ -145,7 +145,7 @@ async function setReclaim(patch: { aggressive?: boolean; depth?: string }) {
   } catch (e) { error.value = String(e) }
 }
 
-onMounted(() => { initTheme(); refresh(); timer = window.setInterval(refresh, 5000) })
+onMounted(() => { initTheme(); void syncThemeFromModule(); refresh(); timer = window.setInterval(refresh, 5000) })
 onUnmounted(() => { if (timer) clearInterval(timer) })
 
 </script>
