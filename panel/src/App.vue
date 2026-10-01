@@ -169,7 +169,8 @@ onUnmounted(() => { if (timer) clearInterval(timer) })
     <DashboardView v-if="activeTab === 'dash'"
       :stats="stats" :engine-up="engineUp" :caps-ok="capsOk" :white="white" :guard="guard" />
     <DefenseView v-else-if="activeTab === 'defense'"
-      :guard="guard" @pick="(d) => { guardDate.value = d; refresh(); }" />
+      :guard="guard" @pick="(d) => { guardDate.value = d; refresh(); }"
+      :listRaw="listRaw" :mod="MOD" @edited="refresh" />
     <SystemView v-else-if="activeTab === 'system'"
       :stats="stats" :caps-entries="capsEntries" />
     <ListView v-else-if="activeTab === 'list'"

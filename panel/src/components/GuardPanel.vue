@@ -2,9 +2,24 @@
 import { computed, ref } from 'vue'
 import type { GuardStats } from '../composables/guard'
 import { guardName, guardDate } from '../composables/guard'
+import { parseListConf, validateEdit } from '../composables/listconf'
+import { detectBridge } from '../composables/ksu'
+import { listEdit } from '../composables/listedit-client'
 
-const props = defineProps<{ stats: GuardStats | null }>()
-const emit = defineEmits<{ (e: 'pick', date: string): void }>()
+const props = defineProps<{ stats: GuardStats | null; listRaw: string; mod: string }>()
+const emit = defineEmits<{ (e: 'pick', date: string): void; (e: 'edited'): void }>()
+
+// 防线 recent 行一键加 FREEZE (spec list-editor §4.5)
+const frozen = ref<Record<string, string>>({})
+async function addFreeze(pkg: string) {
+  const b = detectBridge()
+  if (!b) { frozen.value[pkg] = 'ERR:no-bridge'; return }
+  const e = validateEdit('freeze', pkg, parseListConf(props.listRaw))
+  if (e) { frozen.value[pkg] = 'ERR:' + e; return }
+  const r = await listEdit(b, props.mod, 'add', 'FREEZE', pkg)
+  if (r.ok) { frozen.value[pkg] = '已加'; emit('edited') }
+  else frozen.value[pkg] = r.err
+}
 const dateOpen = ref(false)
 function pickDate(d: string) { dateOpen.value = false; if (d !== guardDate.value) emit('pick', d) }
 
@@ -107,6 +122,8 @@ const fmtHour = (h: number) => String(h).padStart(2, '0') + ':00'
         <span class="gd-ev-r">{{ (RULE_LABEL[r.rule] ?? r.rule) || '—' }}</span>
         <span class="pill" :class="r.act === 'BLOCK' ? 'ok'
           : r.act === 'FUSE' || r.act === 'ERROR' ? 'bad' : ''">{{ r.act }}</span>
+        <button class="gd-ev-fz" v-if="frozen[r.pkg] === '已加'" disabled>已加</button>
+        <button class="gd-ev-fz" v-else @click="addFreeze(r.pkg)" :title="frozen[r.pkg] || ''">＋FREEZE</button>
         <div class="gd-ev-reason">{{ r.reason }}</div>
       </div>
     </div>
@@ -146,4 +163,5 @@ const fmtHour = (h: number) => String(h).padStart(2, '0') + ':00'
   background:transparent;color:var(--ink);text-align:left}
 .gd-menu button.on{background:var(--green-bg);color:var(--green);font-weight:700}
 .gd-row{display:flex;justify-content:space-between;align-items:center}
+.gd-ev-fz{font-size:11px;padding:2px 8px;border:1px solid var(--ink3,#ccc);border-radius:10px;background:var(--bg,#fff);color:var(--ink);justify-self:end}
 </style>
