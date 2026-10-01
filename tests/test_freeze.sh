@@ -30,13 +30,10 @@ printf 'VERSION=1\nMODE=observe\nFREEZE_ENABLED=1\n' > $BR
 t_assert "门: 有ENABLED无行=0" "0" "$(freeze_active $BR)"
 printf 'VERSION=1\nFREEZE_ENABLED=1\nFREEZE com.example.fz\n' > $BR
 t_assert "不存在包零输出" "" "$(freeze_reap $BR com.example.never.exists)"
-mkdir -p /tmp/fzbin
-printf '#!/bin/sh\necho 12345\n' > /tmp/fzbin/pgrep
-printf '#!/bin/sh\nexit 0\n' > /tmp/fzbin/am
-chmod +x /tmp/fzbin/pgrep /tmp/fzbin/am
-OUT=$(PATH=/tmp/fzbin:$PATH freeze_reap $BR com.example.fz)
+pgrep() { echo 12345; }   # 函数shadow: 兼容busybox ash applet优先(设备)与dash(本地)
+am() { :; }
+OUT=$(freeze_reap $BR com.example.fz)
 t_match "杀成功行格式" "12345|com.example.fz||FREEZE|engine reap" "$OUT"
-rm -rf /tmp/fzbin
 # 同包重复条目去重(桥单行)
 cat > /tmp/tf/dup.conf << 'CONF'
 {
