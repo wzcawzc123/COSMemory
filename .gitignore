@@ -1,5 +1,3 @@
 panel/node_modules/
 panel/dist/
-data/stats.log
-data/acts
-data/guard/
+data/
