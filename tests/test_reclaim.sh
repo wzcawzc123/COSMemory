@@ -71,5 +71,8 @@ printf '{ "reclaim": { "aggressive": false, "depth": "cached" } }\n' > $MK/confi
 rm -f $WD/reclaim.last
 run_rc
 t_assert "总闸关: 零动作" "0" "$(grep -c RECLAIM $WD/acts)"
+t_assert "PSI等于阈值也算(>=)" "1" "$(reclaim_should_fire 1000 1 8.5 1024 60 1 $T/psi $T/mem $T/last)"
+t_assert "坏cool(两行值)回默认不炸" "1" "$(reclaim_should_fire 1000 1 5 1024 "60
+60" 1 $T/psi $T/mem $T/last)"
 rm -rf $T
 t_done

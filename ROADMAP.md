@@ -57,7 +57,7 @@
 
 ## 二期功能（v1.x，按需排期）
 
-- [ ] **激进回收档**：PSI 超阈值 + 内存水位低时按 adj 从高到低回收（`reclaim.aggressive`，出厂关）
+- [x] **激进回收档**（v0.6.0）：触发=PSI≥阈值 AND 水位<下限(CAP_PSI=0 降级单看水位)；深度三档可配、白名单免疫、单轮封顶+冷却；T-R1 真机强制触发/白名单零伤亡/T-R2 静默/模拟链全过
 - [x] **FREEZE 名单实现**（v0.5.0）：在册即封杀 — 引擎存量杀+巡检（T-FREEZE ①③④⑤实测过）+ 拦拉起 hook（T-FREEZE ②实测: startProcess=1, FREEZE_BLOCK 拦截、进程零创建）；总闸 freeze.enabled、冲突双向拒绝
 - [ ] **调参模块**：lmkd `device_config` / minfree / ZRAM（`tuning.enabled`，出厂关，改动可回滚）
 - [ ] **面板名单编辑器**：写操作需评估原子性与配置污染风险，晚于一切读功能

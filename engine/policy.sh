@@ -56,6 +56,9 @@ plan_reclaim() {
 # R2: AND+降级+节流; 读失败一律0 (fail-safe)
 reclaim_should_fire() {
   now=$1; agg=$2; psi_t=$3; floor=$4; cool=$5; cap=$6; psif=$7; memf=$8; lastf=$9
+  case "$cool" in ''|*[!0-9]*) cool=60;; esac
+  case "$floor" in ''|*[!0-9]*) floor=1024;; esac
+  psi_t=$(printf '%s' "$psi_t" | head -1); cool=$(printf '%s' "$cool" | head -1); floor=$(printf '%s' "$floor" | head -1)
   [ "$agg" = "1" ] || { echo 0; return 0; }
   if [ -f "$lastf" ]; then
     last=$(cat "$lastf" 2>/dev/null); [ -n "$last" ] || last=0
@@ -67,7 +70,7 @@ reclaim_should_fire() {
   if [ "$cap" = "1" ]; then
     p=$(awk '/some/{for(i=1;i<=NF;i++) if ($i ~ /^avg10=/) {split($i,a,"="); print a[2]; exit}}' "$psif" 2>/dev/null)
     [ -n "$p" ] || { echo 0; return 0; }
-    hit=$(awk -v v="$p" -v t="$psi_t" 'BEGIN{print ((v+0)>(t+0)) ? 1 : 0}')
+    hit=$(awk -v v="$p" -v t="$psi_t" 'BEGIN{print ((v+0)>=(t+0)) ? 1 : 0}')
     [ "$hit" = "1" ] || { echo 0; return 0; }
   fi
   echo 1

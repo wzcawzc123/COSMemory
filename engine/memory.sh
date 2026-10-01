@@ -75,7 +75,7 @@ reclaim_cycle() {
   reclaim_cycle
   grep '^KILL ' "$WORKDIR/acts" | while read -r _ pid _; do date +%s > "$WORKDIR/cool/$pid"; done
   apply_actions "$WORKDIR/acts" "$WORKDIR/state" >> "$STATS_LOG"
-  grep '^RECLAIM ' "$WORKDIR/acts" 2>/dev/null | while read -r _ rp pid_r pkg_r; do
+  grep '^RECLAIM ' "$WORKDIR/acts" 2>/dev/null | while read -r _ pid_r pkg_r; do
     echo "$(date +%s)|$pid_r|$pkg_r||RECLAIM|aggressive depth=${R_DEPTH:-cached}" >> "$TELEM_PATH"
   done
   FRZ=$(freeze_reap "$BRIDGE_PATH" $FREEZE_LIST 2>/dev/null)
