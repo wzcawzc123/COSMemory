@@ -94,13 +94,13 @@ onMounted(async () => {
         <i /><span v-if="pendingR" class="st-confirm">确认?</span>
       </button>
     </div>
-    <div class="st-mode-row" v-if="raOn" style="margin-top:10px">
-      <div class="meta">回收深度</div>
-      <div class="st-seg" style="width:auto">
+    <div class="st-mode-row" v-if="raOn" style="margin-top:10px; flex-wrap: wrap">
+      <div class="meta" style="width:100%">回收深度</div>
+      <div class="st-seg" style="width:100%">
         <button v-for="d in [['cached','温和'],['previous','标准'],['service','彻底']]" :key="d[0]"
           class="st-seg-b" :class="{ on: raDepth === d[0] }" @click="pickDepth(d[0])">{{ d[1] }}</button>
       </div>
-      <div class="meta" style="margin-top:6px">{{ DEPTH_LABEL[raDepth]?.[1] }}</div>
+      <div class="meta" style="width:100%; margin-top:6px">{{ DEPTH_LABEL[raDepth]?.[1] }}</div>
     </div>
   </div>
 
@@ -125,7 +125,7 @@ onMounted(async () => {
   <!-- 关于 -->
   <div class="sec"><div class="b"><svg class="si" viewBox="0 0 24 24"><use href="#i-award-fill"/></svg></div><h2>关于</h2></div>
   <div class="card st-about">
-    <div class="st-about-t">COSMemory <b>v0.4.0</b></div>
+    <div class="st-about-t">COSMemory <b>v0.7.2</b></div>
     <div class="st-about-s">白名单保活 + 智能回收 · 阶段二「AMS防线」</div>
     <div class="st-about-line">作者：<b>是你吗薰儿</b></div>
     <div class="st-about-line">
