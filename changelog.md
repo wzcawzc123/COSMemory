@@ -1,5 +1,10 @@
 # 【更新日志】
 
+## v0.7.1 2026.10.01 (发布事故修复)
+- **修: 发布包面板为旧版** — panel 构建产物未同步至仓库 webroot, 导致 v0.7.0 zip 内无名单编辑器 UI; 本次 webroot 已对齐最新构建
+- **修: 覆盖安装清空运行时数据** — customize.sh 增加 data 迁移 (state/统计历史/防线日志在安装期自动保留)
+- **增: COSGuard APK 自动安装** — 安装期自动 pm install (失败降级提示手动), LSPosed 启用仍需手动
+
 ## v0.7.0 2026.10.01 (面板名单编辑器)
 - 名单页显式编辑模式: WHITE/KILL/FREEZE 三组增删, 行级二次确认, 组差异化表单
 - 已装应用选择器: COSGuard AppCatalog 生成 apps.json+第三方图标, 搜索/回填/降级手打
