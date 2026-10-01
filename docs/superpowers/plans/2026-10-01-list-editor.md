@@ -34,7 +34,7 @@
 **Interfaces:**
 - Produces: `guard_bridge()` — 调用方环境依赖 `MODDIR, BRIDGE_DIR, BRIDGE` 且已 `. engine/lists.sh` (parse_lists)。Task 2 的 listedit.sh source 本文件后调用。
 
-- [ ] **Step 1: 建 engine/bridge.sh (函数体自 service.sh 原样移入)**
+- [x] **Step 1: 建 engine/bridge.sh (函数体自 service.sh 原样移入)**
 
 ```sh
 #!/system/bin/sh
@@ -71,7 +71,7 @@ guard_bridge() {
 
 **注意**: 函数体以 service.sh 当前实际内容为准移植 (上面为 2026-10-01 读取的原文); 若 Step 2 发现差异, 以 service.sh 现场为准。
 
-- [ ] **Step 2: service.sh 函数体删除, 原位替换为 source**
+- [x] **Step 2: service.sh 函数体删除, 原位替换为 source**
 
 锚点法定位: `grep -n "^guard_bridge() {" service.sh` 得起点行, 从起点向后找第一个**独占一行的 `}`** (函数体内所有 `}` 都带前导空格或后缀字符, 只有函数闭合独占) = 终点行。删除 [起点, 终点], 原位插入:
 ```sh
@@ -79,12 +79,12 @@ guard_bridge() {
 ```
 验证: `grep -c "^guard_bridge() {" service.sh` 输出 0; `grep -n "engine/bridge.sh" service.sh` 输出 1。
 
-- [ ] **Step 3: 回归既有 bridge 测试**
+- [x] **Step 3: 回归既有 bridge 测试**
 
 Run: `cd /workspace/COSMemory && sh tests/test_guard_bridge.sh`
 Expected: 全绿, PASS 计数与改前一致。若测试断言函数定义位置, 更新为断言 `engine/bridge.sh` source 行。
 
-- [ ] **Step 4: 真机功能等价验证**
+- [x] **Step 4: 真机功能等价验证**
 
 按部署中转流程把 `engine/bridge.sh`、`service.sh` 部署到设备模块目录 (md5 双端核对), 设备执行:
 ```sh
@@ -94,7 +94,7 @@ head -5 $BRIDGE; echo rc=$?
 ```
 Expected: 输出 `# COSGuard bridge...`/`VERSION=1`/`MODE=...`/`BLOCK=...`/`WHITE ...` 且 rc=0, 与改动前格式一致。
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add engine/bridge.sh service.sh tests/test_guard_bridge.sh
@@ -114,7 +114,7 @@ git commit -m "refactor(engine): 抽取 guard_bridge 到 engine/bridge.sh 供 li
 - Produces: `sh engine/listedit.sh add|del <WHITE|KILL|FREEZE> <target>` → stdout `OK` 或 `ERR:<badfmt|dup|conflict|parsefail|iofail|nomatch|toomany>` (bridge 失败时 `OK` 后跟 `WARN:bridge` 行)。Task 4/7 的前端 client 依赖此协议。
 - 可测性: 脚本支持 `LISTEDIT_SOURCED=1` 被 source 而不执行 main (测试可 override 内部函数)。
 
-- [ ] **Step 1: 写失败测试 tests/test_listedit.sh**
+- [x] **Step 1: 写失败测试 tests/test_listedit.sh**
 
 ```sh
 #!/system/bin/sh
@@ -191,12 +191,12 @@ printf "# pass=%d fail=%d\n" "$PASS" "$FAIL"
 [ "$FAIL" -eq 0 ]
 ```
 
-- [ ] **Step 2: 运行确认失败**
+- [x] **Step 2: 运行确认失败**
 
 Run: `cd /workspace/COSMemory && sh tests/test_listedit.sh`
 Expected: FAIL (listedit.sh 不存在), 退出码非 0。
 
-- [ ] **Step 3: 实现 engine/listedit.sh**
+- [x] **Step 3: 实现 engine/listedit.sh**
 
 ```sh
 #!/system/bin/sh
@@ -288,12 +288,12 @@ if [ "${LISTEDIT_SOURCED:-}" != 1 ]; then
 fi
 ```
 
-- [ ] **Step 4: 运行测试确认全绿**
+- [x] **Step 4: 运行测试确认全绿**
 
 Run: `cd /workspace/COSMemory && sh tests/test_listedit.sh`
 Expected: 全部 ok, `# pass=N fail=0`, 退出码 0。任何 FAIL 按断言名修实现 (不改测试期望)。
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add engine/listedit.sh tests/test_listedit.sh
@@ -313,7 +313,7 @@ git commit -m "feat(engine): listedit 名单写入层 — 同源校验/parsefail
 
 **背景 bug**: 现 parseListConf 对 FREEZE 用 `PKG.test` (不带冒号), 而 awk 允许 `FREEZE pkg:group` → 带组行前端显示为非法。本任务顺修。
 
-- [ ] **Step 1: 写失败测试 panel/src/composables/listedit.test.ts**
+- [x] **Step 1: 写失败测试 panel/src/composables/listedit.test.ts**
 
 ```ts
 import { describe, it, expect } from 'vitest'
@@ -355,12 +355,12 @@ describe('buildTarget', () => {
 })
 ```
 
-- [ ] **Step 2: 运行确认失败**
+- [x] **Step 2: 运行确认失败**
 
 Run: `cd panel && npx vitest run src/composables/listedit.test.ts`
 Expected: FAIL — `validateEdit`/`buildTarget`/`FREEZE_FULL` 未导出 (或 FREEZE 带组断言红)。
 
-- [ ] **Step 3: 实现 — listconf.ts 修改**
+- [x] **Step 3: 实现 — listconf.ts 修改**
 
 (1) 解析 bug 修复: `parseListConf` 内 FREEZE 分支
 ```ts
@@ -401,12 +401,12 @@ export function buildTarget(group: ListGroup, pkg: string, suffix: string): stri
 }
 ```
 
-- [ ] **Step 4: 运行测试确认全绿 + 既有回归**
+- [x] **Step 4: 运行测试确认全绿 + 既有回归**
 
 Run: `cd panel && npx vitest run`
 Expected: 全绿 (原 38 断言 + 新增 ≥20), 0 fail。特别确认原 listconf.test.ts 未因 FREEZE 修复变红; 若原测试断言"带组为非法", 按新语义更新该断言 (对齐 awk 是修正不是回归)。
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add panel/src/composables/listconf.ts panel/src/composables/listedit.test.ts
@@ -427,7 +427,7 @@ git commit -m "feat(panel): listconf 编辑校验 validateEdit/buildTarget + 修
 - Consumes: Task 2 的 shell 协议 (`OK|ERR:*`)、Task 3 的 `validateEdit/buildTarget`、`ksu.ts` 的 `detectBridge/execRead`。
 - Produces: `listEdit(bridge, mod, op, group, target): Promise<{ok, err}>`; ListView 新 emit `edited` (App.vue 重拉 conf)。
 
-- [ ] **Step 1: 写失败测试 listedit-client.test.ts**
+- [x] **Step 1: 写失败测试 listedit-client.test.ts**
 
 ```ts
 import { describe, it, expect, vi } from 'vitest'
@@ -455,12 +455,12 @@ describe('listEdit 协议解析', () => {
 })
 ```
 
-- [ ] **Step 2: 运行确认失败**
+- [x] **Step 2: 运行确认失败**
 
 Run: `cd panel && npx vitest run src/composables/listedit-client.test.ts`
 Expected: FAIL — `./listedit-client` 不存在。
 
-- [ ] **Step 3: 实现 listedit-client.ts**
+- [x] **Step 3: 实现 listedit-client.ts**
 
 ```ts
 import { execRead, type KsuBridge } from './ksu'
@@ -486,12 +486,12 @@ export async function listEdit(
 }
 ```
 
-- [ ] **Step 4: 运行确认全绿**
+- [x] **Step 4: 运行确认全绿**
 
 Run: `cd panel && npx vitest run src/composables/listedit-client.test.ts`
 Expected: 5 断言全绿。
 
-- [ ] **Step 5: ListView.vue 编辑模式**
+- [x] **Step 5: ListView.vue 编辑模式**
 
 script setup 段 (在现 import/props 基础上增量):
 ```ts
@@ -569,17 +569,17 @@ function askDel(g: ListGroup, t: string) { confirming.value = `${g}:${t}` }
 ```
 scoped style 补: `.lc-edit{position:absolute;right:12px;top:10px} .lc-addbar{margin-top:6px} .lc-form{display:flex;gap:6px;flex-wrap:wrap} .lc-err{color:var(--red);font-size:12px}` (card 需 `position:relative`)。
 
-- [ ] **Step 6: App.vue 接线**
+- [x] **Step 6: App.vue 接线**
 
 `grep -n "<ListView" panel/src/App.vue` 定位标签, 补两个属性: `:mod="MOD" @edited="refresh"`。
 (确认 App.vue 顶部已有 `const MOD = '/data/adb/modules/COSMemory'` 常量与 `async function refresh()` — 均为现状已有, 无新代码。)
 
-- [ ] **Step 7: 回归 + 构建**
+- [x] **Step 7: 回归 + 构建**
 
 Run: `cd panel && npx vitest run && npx vite build`
 Expected: vitest 全绿; build 成功产出单文件 (dist 被 singlefile 内联)。
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add panel/src/views/ListView.vue panel/src/App.vue panel/src/composables/listedit-client.ts panel/src/composables/listedit-client.test.ts
@@ -600,7 +600,7 @@ git commit -m "feat(panel): ListView 显式编辑模式 + listedit client"
 - Produces: `/data/system/cosmem/apps.json` = `{"v":1,"apps":[{"p":"pkg","l":"label","t":1|0}...]}` (t=1 第三方); `/data/system/cosmem/icons/<pkg>.png` (仅第三方); 触发文件 `apps.refresh` (mtime 变更 ≤10s 重建)。Task 6 消费此协议。
 - HookMain 接线: install() 末尾反射 `ActivityThread.currentActivityThread().getSystemContext()` 拿 Context → `new AppCatalog(ctx).start()`; 任一步失败仅记日志 (降级手打 — spec §4.4 fail-soft)。
 
-- [ ] **Step 1: 写失败测试 CatalogCoreTest.java**
+- [x] **Step 1: 写失败测试 CatalogCoreTest.java**
 
 ```java
 package com.xune.cosguard;
@@ -631,12 +631,12 @@ public class CatalogCoreTest {
 }
 ```
 
-- [ ] **Step 2: 运行确认失败**
+- [x] **Step 2: 运行确认失败**
 
 Run: `cd /workspace/cosguard && ./gradlew test -Pandroid.aapt2FromMavenOverride=/workspace/tools/aapt2-qemu/aapt2`
 Expected: 编译失败 `cannot find symbol CatalogCore`。
 
-- [ ] **Step 3: 实现 CatalogCore.java**
+- [x] **Step 3: 实现 CatalogCore.java**
 
 ```java
 package com.xune.cosguard;
@@ -679,11 +679,11 @@ public final class CatalogCore {
 }
 ```
 
-- [ ] **Step 4: 运行测试到绿**
+- [x] **Step 4: 运行测试到绿**
 
 Run: 同 Step 2 命令。Expected: `CatalogCoreTest` 2 用例绿, 其余 34 保持绿。
 
-- [ ] **Step 5: 实现 AppCatalog.java (薄壳: 调度+IO)**
+- [x] **Step 5: 实现 AppCatalog.java (薄壳: 调度+IO)**
 
 ```java
 package com.xune.cosguard;
@@ -770,7 +770,7 @@ public final class AppCatalog {
 }
 ```
 
-- [ ] **Step 6: HookMain 接线**
+- [x] **Step 6: HookMain 接线**
 
 `install()` 末尾 (log "COSGuard loaded..." 之后) 插入:
 ```java
@@ -786,12 +786,12 @@ public final class AppCatalog {
         }
 ```
 
-- [ ] **Step 7: 全量测试 + 构建 APK**
+- [x] **Step 7: 全量测试 + 构建 APK**
 
 Run: `cd /workspace/cosguard && ./gradlew test assembleRelease -Pandroid.aapt2FromMavenOverride=/workspace/tools/aapt2-qemu/aapt2`
 Expected: test 36 绿 (34+2); assembleRelease 成功产出 app/build/outputs/apk/release/*.apk。
 
-- [ ] **Step 8: Commit (cosguard 仓)**
+- [x] **Step 8: Commit (cosguard 仓)**
 
 ```bash
 cd /workspace/cosguard && git add -A && git commit -m "feat: AppCatalog apps.json+icons 生成 — 30s首建/refresh触发/24h兜底"
@@ -811,7 +811,7 @@ cd /workspace/cosguard && git add -A && git commit -m "feat: AppCatalog apps.jso
 - Consumes: Task 5 的 apps.json 协议; `ksu.ts` 的 `detectBridge/execRead`。
 - Produces: `parseApps(json): {p,l,t}[]`; `filterApps(apps, q)`; `<AppPicker @select="(pkg: string) => ...">`。ListView 表单「从已装应用选」入口。
 
-- [ ] **Step 1: 写失败测试 apppicker.test.ts**
+- [x] **Step 1: 写失败测试 apppicker.test.ts**
 
 ```ts
 import { describe, it, expect } from 'vitest'
@@ -837,11 +837,11 @@ describe('filterApps', () => {
 })
 ```
 
-- [ ] **Step 2: 运行确认失败**
+- [x] **Step 2: 运行确认失败**
 
 Run: `cd panel && npx vitest run src/composables/apppicker.test.ts` → FAIL (模块不存在)。
 
-- [ ] **Step 3: 实现 apppicker.ts**
+- [x] **Step 3: 实现 apppicker.ts**
 
 ```ts
 export interface AppEntry { p: string; l: string; t: number }
@@ -874,9 +874,9 @@ export function parseIcons(out: string): Record<string, string> {
 }
 ```
 
-- [ ] **Step 4: 运行确认全绿** — `cd panel && npx vitest run src/composables/apppicker.test.ts` → 7 断言绿。
+- [x] **Step 4: 运行确认全绿** — `cd panel && npx vitest run src/composables/apppicker.test.ts` → 7 断言绿。
 
-- [ ] **Step 5: 实现 AppPicker.vue**
+- [x] **Step 5: 实现 AppPicker.vue**
 
 ```vue
 <script setup lang="ts">
@@ -939,7 +939,7 @@ function pick(p: string) { emit('select', p); emit('close') }
 </style>
 ```
 
-- [ ] **Step 6: ListView 表单挂选择器**
+- [x] **Step 6: ListView 表单挂选择器**
 
 ListView script 增: `import AppPicker from '../components/AppPicker.vue'; const picker = ref(false)`
 表单 html 增按钮与组件:
@@ -949,9 +949,9 @@ ListView script 增: `import AppPicker from '../components/AppPicker.vue'; const
   @select="(p) => { formPkg = p; formErr = ''; picker = false }" />
 ```
 
-- [ ] **Step 7: 回归 + 构建** — `cd panel && npx vitest run && npx vite build` → 全绿 + 构建成功。
+- [x] **Step 7: 回归 + 构建** — `cd panel && npx vitest run && npx vite build` → 全绿 + 构建成功。
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 ```bash
 git add panel/src/composables/apppicker.ts panel/src/composables/apppicker.test.ts panel/src/components/AppPicker.vue panel/src/views/ListView.vue
 git commit -m "feat(panel): AppPicker 已装应用选择器 — apps.json/搜索/icon批量≤2exec"
@@ -970,7 +970,7 @@ git commit -m "feat(panel): AppPicker 已装应用选择器 — apps.json/搜索
 - Consumes: Task 3 `validateEdit`、Task 4 `listEdit`。
 - Produces: DefenseView 新 emit `edited` → App.vue `<DefenseView ... @edited="refresh">` 刷新名单页数据。
 
-- [ ] **Step 1: GuardPanel.vue 修改**
+- [x] **Step 1: GuardPanel.vue 修改**
 
 script setup 增:
 ```ts
@@ -1005,17 +1005,17 @@ DefenseView: `defineProps<{ guard; listRaw; mod }>()` 透传给 GuardPanel, emit
   @pick="(d) => emit('pick', d)" @edited="emit('edited')" />
 ```
 
-- [ ] **Step 2: App.vue 接线**
+- [x] **Step 2: App.vue 接线**
 
 `grep -n "<DefenseView" panel/src/App.vue` 定位, 补 `:listRaw="listRaw" :mod="MOD" @edited="refresh"`。
 
-- [ ] **Step 3: 验证 D4 拦截路径**
+- [x] **Step 3: 验证 D4 拦截路径**
 
 `validateEdit('freeze', pkg, conf)` 在包已 WHITE 时返回 `conflict` → 按钮 title 显示 `ERR:conflict`, 不发 shell 命令 — 由 vitest 既有断言 (listedit.test.ts 'D4 包名级') 保证逻辑, 组件层无需重复测。
 
-- [ ] **Step 4: 全量回归** — `cd panel && npx vitest run && npx vite build` → 全绿 + 构建成功。
+- [x] **Step 4: 全量回归** — `cd panel && npx vitest run && npx vite build` → 全绿 + 构建成功。
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 ```bash
 git add panel/src/components/GuardPanel.vue panel/src/views/DefenseView.vue panel/src/App.vue
 git commit -m "feat(panel): 防线 recent 行一键加 FREEZE (D4 前端拦截)"
@@ -1029,7 +1029,7 @@ git commit -m "feat(panel): 防线 recent 行一键加 FREEZE (D4 前端拦截)"
 - Modify: `module.prop` (v0.7.0/7000), `version.json`, `changelog.md`
 - 部署: 中转流程 (Linux cp → /storage/emulated/0/Download/ → Android cp → 目标, md5 双端核对)
 
-- [ ] **Step 1: 三端全量测试**
+- [x] **Step 1: 三端全量测试**
 
 Run (linux):
 ```bash
@@ -1039,13 +1039,13 @@ cd /workspace/cosguard && ./gradlew test -Pandroid.aapt2FromMavenOverride=/works
 ```
 Expected: shell 全套 (原 11 套 + test_listedit) PASS; vitest 全绿 (原 38 + 新增); JUnit 36 绿。
 
-- [ ] **Step 2: 部署模块侧 + hook APK**
+- [x] **Step 2: 部署模块侧 + hook APK**
 
 1. panel build: `cd panel && npx vite build` → webroot 产物同步到模块 (pack_release.sh 的 skip 规则外, 按现有 webroot 更新流程)。
 2. engine/listedit.sh + engine/bridge.sh + service.sh → 设备 `/data/adb/modules/COSMemory/` (中转+md5)。
 3. cosguard `assembleRelease` → APK → 设备 `pm install -r` (铁律: pm install 我执行)。
 
-- [ ] **Step 3: 真机 e2e — 编辑链**
+- [x] **Step 3: 真机 e2e — 编辑链**
 
 ```sh
 # 3.1 shell 直链: add → conf 变 → guard.conf 变
@@ -1057,21 +1057,21 @@ grep "^WHITE com.e2e.test$" /data/system/cosmem/guard.conf                 # 期
 sh /data/adb/modules/COSMemory/engine/listedit.sh del WHITE com.e2e.test   # 期望 OK + 两文件均无残留
 ```
 
-- [ ] **Step 4: 真机 e2e — UI 链 (KSU WebUI)**
+- [x] **Step 4: 真机 e2e — UI 链 (KSU WebUI)**
 
 打开 KSU 管理器 → COSMemory WebUI → 名单页: 「编辑」进入 → 新增表单手打一条 →
 选择器打开 (期望 label 列表+第三方 icon) → 点选回填 → 确定 → 行出现 → 删除链 → 完成。
 防线页: recent 行「＋FREEZE」→ 已加 (或 ERR:conflict 如预期)。
 失败项记录到验证矩阵, 不带病发布。
 
-- [ ] **Step 5: 发布**
+- [x] **Step 5: 发布**
 
 1. `module.prop`: versionName=v0.7.0, versionCode=7000; version.json/changelog.md 同步。
 2. `sh tools/pack_release.sh` → COSMemory_v0.7.0.zip → md5。
 3. 归档 `/storage/emulated/0/内存管理模块/`, v0.6.0 移入 `旧版/` (中转+md5)。
 4. git tag v0.7.0 + push (main)。
 
-- [ ] **Step 6: 验证矩阵与汇报**
+- [x] **Step 6: 验证矩阵与汇报**
 
 汇总: 三端测试计数 / e2e 3.1-3.3 结果 / UI 链截图或观察记录 / 发布 md5 / 已知限制
 (选择器降级条件、FREEZE 需开关开启、guard 5s 热载窗口)。
