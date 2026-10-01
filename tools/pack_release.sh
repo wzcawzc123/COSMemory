@@ -24,8 +24,10 @@ with zipfile.ZipFile(out, 'w', zipfile.ZIP_DEFLATED) as z:
         if rel != '.' and any(rel == s or rel.startswith(s + os.sep) for s in skip):
             dns.clear(); continue
         for fn in fns:
+            relf = fn if rel == '.' else os.path.join(rel, fn)
+            if relf in skip: continue
             p = os.path.join(dp, fn)
-            z.write(p, os.path.relpath(p, stage)); n += 1
+            z.write(p, relf); n += 1
     z.write(apk, 'assets/COSGuard-' + os.path.basename(out).split('_',1)[1].replace('.zip','') + '.apk'); n += 1
 print(f'entries={n}')
 PY
