@@ -7,7 +7,7 @@
 ![Tested](https://img.shields.io/badge/实机验证-一加11%20%C2%B7%20CO16%20%C2%B7%20KSU-orange)
 
 <p><b>Android 12+ 通用引擎（ColorOS 15/16 实测）· 白名单保活 + 名单外智能回收 · KernelSU / Magisk 模块</b></p>
-<p>作者：<b>是你吗薰儿</b> · 基于 <a href="https://github.com/OneB1ank/A1Memory">HChai/OneB1ank 的 A1Memory</a> 二次开发 (GPLv3)</p>
+<p>作者：<b>是你吗薰儿</b> · 基于 <a href="https://github.com/OneB1ank/A1Memory">HChai/OneB1ank 的 A1Memory</a> 二次开发 (GPLv3) · 代码仓库：<a href="https://github.com/wzcawzc123/COSMemory">wzcawzc123/COSMemory</a></p>
 </div>
 
 **主界面 · 引擎状态与白名单**
@@ -69,6 +69,12 @@ KernelSU 管理器 → 模块详情 → 打开，五个区块：
 **KernelSU**：管理器 → 模块 → 从本地安装 `COSMemory-vX.X.zip` → 重启
 
 **Magisk**：App → 模块 → 从本地安装（理论兼容，暂无实机验证）→ 重启
+
+**防线组件 COSGuard（LSPosed）** —— zip 的 `assets/` 内附 APK，缺它只有被动保活，防线拦截不生效：
+
+1. 解压 zip，安装 `assets/COSGuard-vX.X.apk`
+2. LSPosed 管理器 → 模块 → 勾选 COSGuard，作用域勾「系统框架」
+3. 重启；LSPosed 日志出现 `COSGuard loaded` 即生效
 
 安装后：
 
