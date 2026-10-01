@@ -50,3 +50,54 @@ plan_reclaim() {
     echo "KILL $pid $pkg"; n=$((n+1))
   done < "$1"
 }
+
+# ===== 激进回收 (spec 2026-10-01, R1-R4) =====
+# reclaim_should_fire <now> <agg> <psi_t> <floor_kb> <cool_sec> <cap_psi> <psi_file> <mem_file> <last_file>
+# R2: AND+降级+节流; 读失败一律0 (fail-safe)
+reclaim_should_fire() {
+  now=$1; agg=$2; psi_t=$3; floor=$4; cool=$5; cap=$6; psif=$7; memf=$8; lastf=$9
+  [ "$agg" = "1" ] || { echo 0; return 0; }
+  if [ -f "$lastf" ]; then
+    last=$(cat "$lastf" 2>/dev/null); [ -n "$last" ] || last=0
+    [ $(( now - last )) -lt "$cool" ] && { echo 0; return 0; }
+  fi
+  ma=$(awk '/MemAvailable/{print int($2/1024); exit}' "$memf" 2>/dev/null)
+  [ -n "$ma" ] || { echo 0; return 0; }
+  [ "$ma" -lt "$floor" ] || { echo 0; return 0; }
+  if [ "$cap" = "1" ]; then
+    p=$(awk '/some/{for(i=1;i<=NF;i++) if ($i ~ /^avg10=/) {split($i,a,"="); print a[2]; exit}}' "$psif" 2>/dev/null)
+    [ -n "$p" ] || { echo 0; return 0; }
+    hit=$(awk -v v="$p" -v t="$psi_t" 'BEGIN{print ((v+0)>(t+0)) ? 1 : 0}')
+    [ "$hit" = "1" ] || { echo 0; return 0; }
+  fi
+  echo 1
+}
+
+# depth_match <state> <depth> -> exit 0匹配
+depth_match() {
+  case "$2" in
+    cached)   case "$1" in cch*) return 0;; *) return 1;; esac ;;
+    previous) case "$1" in cch*|prev*) return 0;; *) return 1;; esac ;;
+    service)  case "$1" in cch*|prev*|svc|svcb) return 0;; *) return 1;; esac ;;
+    *) return 1 ;;
+  esac
+}
+
+# plan_aggressive <parsed快照> <WHITE_LIST> <depth> <cap> -> stdout: RECLAIM pid pkg
+# R3按lru行序(≈adj从高到低) R4三重保护继承
+plan_aggressive() {
+  n=0
+  while IFS='|' read -r state proc pid pkg; do
+    [ -z "$pkg" ] && continue
+    depth_match "$state" "$3" || continue
+    is_protected "$state" && continue
+    w_hit=0
+    for w in $2; do
+      if [ "$pkg" = "$w" ]; then w_hit=1; break; fi
+      case "$w" in *:*) ;; *) case "$pkg" in "$w":*) w_hit=1; break;; esac;; esac
+    done
+    [ "$w_hit" = 1 ] && continue
+    echo "RECLAIM $pid $pkg"; n=$((n+1))
+    [ "$n" -ge "$4" ] && break
+  done < "$1"
+}
