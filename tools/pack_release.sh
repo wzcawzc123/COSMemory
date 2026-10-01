@@ -14,7 +14,7 @@ stage, out, apk = os.environ['STAGE'], os.environ['OUT'], os.environ['APK']
 skip = {'panel/node_modules', 'panel/dist', '.git', 'docs', 'tests', 'module', 'image',
         'data', '.gitignore', 'changelog.md', 'version.json', 'magisk.sh', 'tools',
         'deploy_clean.sh', 'forensic.sh', 'watchdog_test.sh', 'restart_engine.sh',
-        'panel/package-lock.json',
+        'panel/package-lock.json', 'panel', 'ROADMAP.md',
         'config/JSON-CONFIG.md', 'config/JSON-CONFIG-zh.md', 'config/JSON-CONFIG-ru.md',
         'config/README.md'}
 n = 0
