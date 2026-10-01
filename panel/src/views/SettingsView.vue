@@ -45,12 +45,17 @@ const logOpen = ref(false)
 
 // ---- 设备信息 ----
 const dev = ref('读取中…')
+// 动态版本号: 单一源头 = module.prop 的 version 行 (发版只改 module.prop, 关于页自动跟随)
+const ver = ref('…')
 onMounted(async () => {
   const b = detectBridge()
-  if (!b) { dev.value = '无 KSU 桥'; return }
-  dev.value = (await execRead(b,
-    'getprop ro.product.model; getprop ro.build.display.id; uname -r'
-  )).trim().split('\n').filter(Boolean).join(' · ') || '—'
+  if (!b) { dev.value = '无 KSU 桥'; ver.value = '?'; return }
+  const [v, d] = await Promise.all([
+    execRead(b, 'grep "^version=" /data/adb/modules/COSMemory/module.prop'),
+    execRead(b, 'getprop ro.product.model; getprop ro.build.display.id; uname -r'),
+  ])
+  ver.value = v.split('=')[1]?.trim() || '?'
+  dev.value = d.trim().split('\n').filter(Boolean).join(' · ') || '—'
 })
 </script>
 
@@ -125,7 +130,7 @@ onMounted(async () => {
   <!-- 关于 -->
   <div class="sec"><div class="b"><svg class="si" viewBox="0 0 24 24"><use href="#i-award-fill"/></svg></div><h2>关于</h2></div>
   <div class="card st-about">
-    <div class="st-about-t">COSMemory <b>v0.7.2</b></div>
+    <div class="st-about-t">COSMemory <b>v{{ ver }}</b></div>
     <div class="st-about-s">白名单保活 + 智能回收 · 阶段二「AMS防线」</div>
     <div class="st-about-line">作者：<b>是你吗薰儿</b></div>
     <div class="st-about-line">

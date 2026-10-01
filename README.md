@@ -1,7 +1,7 @@
 <div align="center">
 <h1>COSMemory 内存管理</h1>
 
-![Version](https://img.shields.io/badge/version-v0.7.0-blue)
+![Version](https://img.shields.io/github/v/release/wzcawzc123/COSMemory?label=version&color=blue)
 ![License](https://img.shields.io/badge/license-GPLv3-green)
 ![ColorOS](https://img.shields.io/badge/ColorOS-15%20%7C%2016-brightgreen)
 ![Tested](https://img.shields.io/badge/实机验证-一加11%20%C2%B7%20CO16%20%C2%B7%20KSU-orange)
@@ -226,7 +226,7 @@ adj 自动还原、配置自动清理；**自定义名单会一并删除**，要
 
 ## 🗺 路线图
 
-当前 **v0.7.0**（名单编辑器 + KILL 逐条实测完成），**v1.0 收尾中**（guard/FREEZE 日用观察 2026-10-03 满 3 天 → 发布帖 → tag）。通用化三阶段（v1.0 本机封版 → OPPO 系横向扩展+社区群测 → 小米/三星跨生态）与发布前检查清单见 **[ROADMAP.md](ROADMAP.md)**。
+名单编辑器与 KILL 逐条实测已完成，**v1.0 收尾中**（最新版本见顶部徽章与 [Releases](https://github.com/wzcawzc123/COSMemory/releases)），（guard/FREEZE 日用观察 2026-10-03 满 3 天 → 发布帖 → tag）。通用化三阶段（v1.0 本机封版 → OPPO 系横向扩展+社区群测 → 小米/三星跨生态）与发布前检查清单见 **[ROADMAP.md](ROADMAP.md)**。
 
 ## 📜 许可与署名
 
