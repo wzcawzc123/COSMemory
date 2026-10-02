@@ -226,7 +226,7 @@ adj 自动还原、配置自动清理；**自定义名单会一并删除**，要
 
 ## 🗺 路线图
 
-名单编辑器与 KILL 逐条实测已完成，**v1.0 收尾中**（最新版本见顶部徽章与 [Releases](https://github.com/wzcawzc123/COSMemory/releases)），（guard/FREEZE 日用观察 2026-10-03 满 3 天 → 发布帖 → tag）。通用化三阶段（v1.0 本机封版 → OPPO 系横向扩展+社区群测 → 小米/三星跨生态）与发布前检查清单见 **[ROADMAP.md](ROADMAP.md)**。
+**v1.0 已封版**（2026-10-03 收数通过：guard 三天日用 PASS 95 / BLOCK 11 全正向、引擎 FAILED=0、哨兵+看门狗真机实弹验证全过），最新版本见顶部徽章与 [Releases](https://github.com/wzcawzc123/COSMemory/releases)。通用化三阶段（v1.0 本机封版 ✅ → OPPO 系横向扩展+社区群测 → 小米\/三星跨生态）与发布前检查清单见 **[ROADMAP.md](ROADMAP.md)**。
 
 ## 📜 许可与署名
 
