@@ -4,6 +4,7 @@ import { detectBridge, execRead, type KsuBridge } from './composables/ksu'
 import { parseStats, parseCaps, whiteStatus, CAP_LABELS, type DayStats } from './composables/stats'
 import { parseGuard, guardDate, type GuardStats } from './composables/guard'
 import { initTheme, syncThemeFromModule } from './composables/theme'
+import { parseMemtop, parseFrozen, type MemRow } from './composables/memview'
 import DashboardView from './views/DashboardView.vue'
 import DefenseView from './views/DefenseView.vue'
 import SystemView from './views/SystemView.vue'
@@ -22,6 +23,10 @@ const engineUp = ref<boolean | null>(null)
 const error = ref('')
 const guard = ref<GuardStats | null>(null)
 const listRaw = ref('')
+const memtop = ref<MemRow[]>([])
+const frozen = ref<{ count: number; pkgs: string[] } | null>(null)
+const memLoading = ref(false)
+const freeing = ref(false)
 type Tab = 'dash' | 'defense' | 'system' | 'list' | 'set'
 const activeTab = ref<Tab>('dash')
 function goTab(id: Tab) { activeTab.value = id; window.scrollTo({ top: 0 }) }
@@ -103,6 +108,37 @@ const TABS: { id: Tab; label: string; icon: string }[] = [
 const capsOk = computed(() => Object.values(caps.value).filter(v => v === 1).length)
 const capsEntries = computed(() => Object.entries(caps.value))
 
+/** v1.1.0 内存/冻结观测: 按需加载(不进5s轮询, memtop约2.8s), 手动刷新可重跑 */
+async function loadMem() {
+  const b = bridge.value
+  if (!b) return
+  memLoading.value = true
+  try {
+    const [m, f] = await Promise.all([
+      execRead(b, `sh ${MOD}/engine/memtop.sh`),
+      execRead(b, `sh ${MOD}/engine/frozencap.sh`),
+    ])
+    const rows = parseMemtop(m)
+    if (rows.length) memtop.value = rows
+    const fz = parseFrozen(f)
+    if (fz.count >= 0) frozen.value = fz
+  } catch { /* 保持上次数据 */ } finally { memLoading.value = false }
+}
+
+/** v1.1.0 一键释放: touch force_reclaim 旗标, 回读验证, 引擎≤8s执行; 9s后再拉观测 */
+async function releaseNow() {
+  const b = bridge.value
+  if (!b) { error.value = '无 KSU 桥'; return }
+  freeing.value = true
+  try {
+    const r = await execRead(b, `touch ${MOD}/data/force_reclaim && echo TRIG`)
+    if (r.includes('TRIG')) {
+      error.value = '已触发一键释放，引擎 ≤8 秒执行'
+      window.setTimeout(() => { void loadMem() }, 9000)
+    } else error.value = '触发失败: ' + (r.trim() || '空回读')
+  } catch (e) { error.value = String(e) } finally { freeing.value = false }
+}
+
 /** 设置页模式开关: 写 memory.json mode → 30s 桥自动生效(热加载) */
 async function setGuardMode(toGuard: boolean) {
   const b = bridge.value
@@ -145,7 +181,7 @@ async function setReclaim(patch: { aggressive?: boolean; depth?: string }) {
   } catch (e) { error.value = String(e) }
 }
 
-onMounted(() => { initTheme(); void syncThemeFromModule(); refresh(); timer = window.setInterval(refresh, 5000) })
+onMounted(() => { initTheme(); void syncThemeFromModule(); refresh(); void loadMem(); timer = window.setInterval(refresh, 5000) })
 onUnmounted(() => { if (timer) clearInterval(timer) })
 
 </script>
@@ -167,7 +203,9 @@ onUnmounted(() => { if (timer) clearInterval(timer) })
     <div v-if="error" class="alert" :class="{ ok: error.includes('已切换') }">{{ error }}</div>
 
     <DashboardView v-if="activeTab === 'dash'"
-      :stats="stats" :engine-up="engineUp" :caps-ok="capsOk" :white="white" :guard="guard" />
+      :stats="stats" :engine-up="engineUp" :caps-ok="capsOk" :white="white" :guard="guard"
+      :memtop="memtop" :frozen="frozen" :mem-loading="memLoading" :freeing="freeing"
+      @refresh-mem="loadMem" @release="releaseNow" />
     <DefenseView v-else-if="activeTab === 'defense'"
       :guard="guard" @pick="(d) => { guardDate.value = d; refresh(); }"
       :listRaw="listRaw" :mod="MOD" @edited="refresh" />
