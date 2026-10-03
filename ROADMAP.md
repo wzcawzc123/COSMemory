@@ -79,7 +79,7 @@
 - **KILL 动作必须带 `:进程后缀`**（整包封杀请用 FREEZE，协议见名单文件头注释）
 - 出厂 KILL 名单**为空**——每条候选须逐条实测，老 A1 (2023) 名单在 2026 年已全部失效（见 [docs/kill-exclusions.md](docs/kill-exclusions.md)）
 - **adj=200 保活只覆盖 lmkd 内存压力路径**；AOSP 标准的 AMS cached 回收按 procState 杀、不看 adj（`am_proc_died adj=905` 实锤，「压 adj→杀」同帧完成，2s 轮询窗口不可入）；Oplus Hans 冻结已证无害（收包即解冻）；`no_frozen` 豁免实验阴性已回滚
-- **日常冷启的真正解 = 阶段二 AMS hook（AOSP 点位）**；本期定位是「防内存压力杀、防 lmkd 猎杀」，**不承诺防日常 cached trim**
+- **双路径覆盖（阶段二已完成 2026-09-30）**：lmkd 内存压力杀由 adj=200 覆盖（已验证）；AMS cached/empty 回收（按 procState 杀、不看 adj）由 COSGuard hook `ProcessRecord.killLocked` 按 reason 过滤拦截（UAT PASS + 21.6h 收数，guard 放量日用，BLOCK 11 全正向）。剩余诚实边界：guard 模式才拦、观察模式只记录；桥缺失/解析失败一律 fail-open 只记不拦；killLocked 之外的旁路杀点（进程自身 exit、厂商私有路径）不承诺覆盖
 - 对照组事实：微信昨夜同样死亡 15 次——**系统对所有 App 一视同仁，无「微信免疫」**；用户感知差异来自使用频率（常开=Activity 热、挂着=Activity 被 trim）
 - **hook 路线已论证排除**：上游 A1 的 libhook_lmkd.so 钩的是 lmkd kill/pidfd，与 adj 同属 lmkd 路径，同样挡不住 AMS/Hans，且引入黑盒二进制维护负担
 - 轻负载下模块**安静无感**（设计目标），效果仅在重负载/多任务场景可感知

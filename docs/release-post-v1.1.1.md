@@ -41,7 +41,7 @@ ColorOS 15/16 的内存管理模块，基于 A1Memory(HChai/OneB1ank) 二次开�
 ## 已知限制（诚实清单）
 
 - 引擎只管 **cch\* 缓存态**进程；服务/前台/最近任务态由系统托管（设计如此）
-- **adj=200 保活只覆盖 lmkd 内存压力路径**：AOSP 标准 AMS cached 回收按 procState 杀、不看 adj（am_proc_died adj=905 实锤），**不承诺防日常 cached trim**——日常冷启的真正解在阶段二 AMS hook
+- **双层防线的诚实边界**：adj=200 保活覆盖 lmkd 内存压力杀；AMS cached/empty 回收（按 procState 杀、不看 adj）由阶段二 COSGuard hook `killLocked` 按 reason 拦截（3 天 BLOCK 11 全正向）——但仅 **guard 模式**拦截、观察模式只记录，桥缺失时 fail-open 只记不拦，进程自身 exit/厂商私有杀点不承诺覆盖
 - 对照组事实：微信昨夜同样死 15 次——系统对所有 App 一视同仁，无「微信免疫」；体感差异来自使用频率
 - **KILL 动作必须带 :进程后缀**（整包封杀用 FREEZE）；出厂 KILL 名单为空，老 A1(2023) 名单 2026 年已全部失效，逐条自测
 - hook lmkd 路线已论证排除（与 adj 同路径，挡不住 AMS/Hans，还引入黑盒二进制）
