@@ -1,6 +1,6 @@
 # COSMemory 路线图
 
-> 状态快照：**2026-10-03 · v1.0 封版**（guard\/FREEZE 三天观察收数通过：BLOCK 11 全正向、FAILED=0、保护机制实弹验证全过；发布帖待发）
+> 状态快照：**2026-10-04 · v1.1.1**（面板三连修：白屏根因 boot-after-paint（冷开首帧 5.7s→1.1s A/B 实测）、日期切换 ref 解包赋值 bug、日期菜单 dropup 裁剪；+按钮底部 toast 反馈、app-shell 导航根治下沉。此前 v1.0 封版收数：guard\/FREEZE 三天 BLOCK 11 全正向、FAILED=0、保护机制实弹全过；发布帖待发）
 
 ## 当前状态
 
