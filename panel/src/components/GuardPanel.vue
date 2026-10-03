@@ -134,7 +134,8 @@ const fmtHour = (h: number) => String(h).padStart(2, '0') + ':00'
 .gd-wrap{display:flex;flex-direction:column;gap:10px}
 .gd-hero{display:flex;flex-direction:column;gap:10px}
 .gd-pills{display:flex;gap:6px;flex-wrap:wrap}
-.gd-nums{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}
+.gd-nums{display:grid;grid-template-columns:repeat(3,1fr);gap:10px 6px}
+.gd-num i{white-space:nowrap}
 .gd-num{text-align:center}.gd-num b{font-size:22px;display:block}
 .gd-num i{font-style:normal;font-size:11px;color:var(--ink2,#888)}
 .gd-bars{width:100%;height:64px;display:block}
@@ -155,7 +156,7 @@ const fmtHour = (h: number) => String(h).padStart(2, '0') + ':00'
   border:1px solid rgba(128,128,128,.35);color:inherit;display:flex;align-items:center;gap:6px}
 .gd-caret{font-style:normal;font-size:10px;opacity:.7}
 .gd-mask{position:fixed;inset:0;z-index:39;background:transparent}
-.gd-menu{position:absolute;right:0;top:calc(100% + 6px);min-width:150px;max-height:240px;
+.gd-menu{position:absolute;right:0;bottom:calc(100% + 6px);min-width:150px;max-height:240px;
   overflow:auto;background:var(--card2);border:1px solid var(--sep);border-radius:12px;
   box-shadow:0 8px 24px rgba(0,0,0,.35);z-index:40;padding:4px;
   display:flex;flex-direction:column}

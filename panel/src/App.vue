@@ -27,10 +27,20 @@ const memtop = ref<MemRow[]>([])
 const frozen = ref<{ count: number; pkgs: string[] } | null>(null)
 const memLoading = ref(false)
 const freeing = ref(false)
+const toastMsg = ref('')
+const toastOk = ref(false)
+let toastTimer: number | undefined
+function toast(msg: string, ok = true) {
+  toastMsg.value = msg; toastOk.value = ok
+  if (toastTimer) clearTimeout(toastTimer)
+  toastTimer = window.setTimeout(() => { toastMsg.value = '' }, 2600)
+}
 type Tab = 'dash' | 'defense' | 'system' | 'list' | 'set'
 const activeTab = ref<Tab>('dash')
-function goTab(id: Tab) { activeTab.value = id; window.scrollTo({ top: 0 }) }
+function goTab(id: Tab) { activeTab.value = id; document.querySelector('.wrap')?.scrollTo({ top: 0 }) }
 let timer: number | undefined
+/* onPickDate: 模板里 guardDate 会被解包成字符串, .value 赋值在严格模式抛错导致选日期无效 */
+function onPickDate(d: string) { guardDate.value = d; void refresh() }
 
 const MODE: Record<string, string> = {
   CAP_LRU: '进程快照', CAP_LRU_FALLBACK: '备用快照源', CAP_PSI: '内存压力',
@@ -122,7 +132,10 @@ async function loadMem() {
     if (rows.length) memtop.value = rows
     const fz = parseFrozen(f)
     if (fz.count >= 0) frozen.value = fz
-  } catch { /* 保持上次数据 */ } finally { memLoading.value = false }
+    /* mem-refresh-toast: 刷新完成反馈 */
+    if (rows.length) toast(`✓ 已刷新 · TOP${rows.length} · 墓碑 ${fz.count >= 0 ? frozen.value?.count : '—'} 个`)
+    else toast('刷新完成，但未读到内存数据', false)
+  } catch (e) { toast('刷新失败: ' + String(e), false) } finally { memLoading.value = false }
 }
 
 /** v1.1.0 一键释放: touch force_reclaim 旗标, 回读验证, 引擎≤8s执行; 9s后再拉观测 */
@@ -133,10 +146,10 @@ async function releaseNow() {
   try {
     const r = await execRead(b, `touch ${MOD}/data/force_reclaim && echo TRIG`)
     if (r.includes('TRIG')) {
-      error.value = '已触发一键释放，引擎 ≤8 秒执行'
+      toast('✓ 已触发释放，引擎 ≤8 秒执行')
       window.setTimeout(() => { void loadMem() }, 9000)
-    } else error.value = '触发失败: ' + (r.trim() || '空回读')
-  } catch (e) { error.value = String(e) } finally { freeing.value = false }
+    } else toast('触发失败: ' + (r.trim() || '空回读'), false)
+  } catch (e) { toast(String(e), false) } finally { freeing.value = false }
 }
 
 /** 设置页模式开关: 写 memory.json mode → 30s 桥自动生效(热加载) */
@@ -181,7 +194,18 @@ async function setReclaim(patch: { aggressive?: boolean; depth?: string }) {
   } catch (e) { error.value = String(e) }
 }
 
-onMounted(() => { initTheme(); void syncThemeFromModule(); refresh(); void loadMem(); timer = window.setInterval(refresh, 5000) })
+/* boot-after-paint: ksu.exec 同步阻塞 JS 线程, 若在 onMounted 直接跑 8 条桥命令
+   (含 memtop ~3s), WebView 首帧会被推迟 5s+ (灰屏根因)。
+   rAF 内只做调度, setTimeout 让出主线程给渲染, 先画首帧再拉数据。 */
+onMounted(() => {
+  initTheme()
+  requestAnimationFrame(() => setTimeout(() => {
+    void syncThemeFromModule()
+    refresh()
+    void loadMem()
+    timer = window.setInterval(refresh, 5000)
+  }, 0))
+})
 onUnmounted(() => { if (timer) clearInterval(timer) })
 
 </script>
@@ -207,7 +231,7 @@ onUnmounted(() => { if (timer) clearInterval(timer) })
       :memtop="memtop" :frozen="frozen" :mem-loading="memLoading" :freeing="freeing"
       @refresh-mem="loadMem" @release="releaseNow" />
     <DefenseView v-else-if="activeTab === 'defense'"
-      :guard="guard" @pick="(d) => { guardDate.value = d; refresh(); }"
+      :guard="guard" @pick="onPickDate"
       :listRaw="listRaw" :mod="MOD" @edited="refresh" />
     <SystemView v-else-if="activeTab === 'system'"
       :stats="stats" :caps-entries="capsEntries" />
@@ -218,6 +242,8 @@ onUnmounted(() => { if (timer) clearInterval(timer) })
     <SettingsView v-else
       :log-tail="logTail" :guard="guard" @set-guard-mode="setGuardMode" @set-reclaim="setReclaim" />
   </div>
+
+  <div v-if="toastMsg" class="toast" :class="{ ok: toastOk }">{{ toastMsg }}</div>
 
   <!-- 底部导航 5 键 -->
   <nav class="tabbar">
