@@ -34,3 +34,16 @@ export async function execRead(bridge: KsuBridge, cmd: string): Promise<string> 
   if (!out.trim()) return ''
   try { return b64utf8(out) } catch { return '' }
 }
+
+/** 批量往返: ksu.exec 是同步阻塞接口, Promise.all 实为串行 N 次 shell 启动;
+ *  多段命令用 @@SEG:key@@ 分隔符合并为一次 base64 往返 (refresh 6次→1次, 数据到位 6s→~1.5s)。 */
+export function splitBatch(decoded: string): Record<string, string> {
+  const parts = decoded.split(/@@SEG:([a-zA-Z0-9_-]+)@@/g)
+  const out: Record<string, string> = {}
+  for (let i = 1; i < parts.length; i += 2) out[parts[i]] = (parts[i + 1] ?? '').trim()
+  return out
+}
+
+export async function execReadBatch(bridge: KsuBridge, cmd: string): Promise<Record<string, string>> {
+  return splitBatch(await execRead(bridge, cmd))
+}

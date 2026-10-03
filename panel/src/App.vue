@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { detectBridge, execRead, type KsuBridge } from './composables/ksu'
+import { detectBridge, execRead, execReadBatch, type KsuBridge } from './composables/ksu'
 import { parseStats, parseCaps, whiteStatus, CAP_LABELS, type DayStats } from './composables/stats'
 import { parseGuard, guardDate, type GuardStats } from './composables/guard'
 import { initTheme, syncThemeFromModule } from './composables/theme'
@@ -57,15 +57,22 @@ async function refresh() {
   const b = bridge.value
   if (!b) { error.value = '未检测到 KSU 桥（请在 KernelSU 管理器中打开）'; return }
   try {
-    // 阶段1: 全部小文件 + pgrep (总耗时 ≤25ms; 不再遍历 /proc)
-    const [log, capsTxt, listTxt, parsed, livePid, guardTxt] = await Promise.all([
-      execRead(b, `tail -100 ${MOD}/data/stats.log 2>/dev/null`),
-      execRead(b, `cat ${MOD}/data/caps.conf 2>/dev/null`),
-      execRead(b, `cat "${LIST}" 2>/dev/null`),
-      execRead(b, `cat ${MOD}/data/parsed.txt 2>/dev/null`),
-      execRead(b, 'pgrep -f engine/memory.sh 2>/dev/null || true'),
-      execRead(b, `sh ${MOD}/engine/guard_stats.sh ${guardDate.value || ''}`).catch(() => ''),
-    ])
+    // 批量单往返: ksu.exec 同步阻塞, 原 Promise.all 6条实为串行 6 次 shell 启动;
+    // @@SEG@@ 分隔符合并为一次 base64 往返 (数据到位 6s -> ~1.5s)
+    const seg = await execReadBatch(b, [
+      `printf '\\n@@SEG:log@@\\n'; tail -100 ${MOD}/data/stats.log 2>/dev/null`,
+      `printf '\\n@@SEG:caps@@\\n'; cat ${MOD}/data/caps.conf 2>/dev/null`,
+      `printf '\\n@@SEG:list@@\\n'; cat "${LIST}" 2>/dev/null`,
+      `printf '\\n@@SEG:parsed@@\\n'; cat ${MOD}/data/parsed.txt 2>/dev/null`,
+      `printf '\\n@@SEG:pid@@\\n'; pgrep -f engine/memory.sh 2>/dev/null || true`,
+      `printf '\\n@@SEG:guard@@\\n'; sh ${MOD}/engine/guard_stats.sh ${guardDate.value || ''} 2>/dev/null || true`,
+    ].join('; '))
+    const log = seg.log ?? ''
+    const capsTxt = seg.caps ?? ''
+    const listTxt = seg.list ?? ''
+    const parsed = seg.parsed ?? ''
+    const livePid = seg.pid ?? ''
+    const guardTxt = seg.guard ?? ''
     stats.value = parseStats(log)
     guard.value = parseGuard(guardTxt)
     caps.value = parseCaps(capsTxt)
@@ -124,10 +131,11 @@ async function loadMem() {
   if (!b) return
   memLoading.value = true
   try {
-    const [m, f] = await Promise.all([
-      execRead(b, `sh ${MOD}/engine/memtop.sh`),
-      execRead(b, `sh ${MOD}/engine/frozencap.sh`),
-    ])
+    // 2 条合 1 次往返 (memtop ~3s 是 dumpsys 计算, 合并省的是 shell 启动开销)
+    const mb = await execReadBatch(b,
+      `printf '\\n@@SEG:m@@\\n'; sh ${MOD}/engine/memtop.sh 2>/dev/null; printf '\\n@@SEG:f@@\\n'; sh ${MOD}/engine/frozencap.sh 2>/dev/null`)
+    const m = mb.m ?? ''
+    const f = mb.f ?? ''
     const rows = parseMemtop(m)
     if (rows.length) memtop.value = rows
     const fz = parseFrozen(f)
