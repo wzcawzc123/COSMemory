@@ -181,8 +181,8 @@ onMounted(async () => {
 .st-about-line{font-size:13px; margin-top:7px}
 .st-about-line a{color:var(--green)}
 .st-about-path{margin-top:10px; font-family:ui-monospace,Menlo,monospace; font-size:11px}
-</style>
 .st-diag{display:flex; flex-direction:column; gap:10px}
 .st-diag-btn{width:100%; padding:10px; border-radius:12px; border:0; font-size:13px; font-weight:600;
   background:var(--green); color:#fff; cursor:pointer}
 .st-diag-btn:disabled{opacity:.55}
+</style>
