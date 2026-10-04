@@ -102,7 +102,7 @@ NirvanaManager.doClear(...)
 |---|---|---|---|---|---|
 | 1 | **Oplus 厂商杀链观测与拦截补全** | 本项目「已知限制」明写旁路杀点不覆盖；BackgroundKillGuard 已证 Oplus 16 存在 Nirvana/o-kill 厂商链 | BackgroundKillGuard §2.3 | 中（需 spike 反编译验证本机 reason 全集） | **高**：补齐诚实边界的直接短板，有同场景开源实现可对照 |
 | 2 | **SKIP/杀伤统计可观测性补强** | ROADMAP 二期已挂（KILLED 只计本轮、SKIP 四类不落日志） | 自身已有 | 小（纯日志） | **高**：账上已认领，半天量级 |
-| 3 | **调参观测窗（只读）→ 动态 swappiness** | ROADMAP Phase 1 已定案；已有 PSI 采集能力 | LMKD-PSI-Activator §2.4 | 中（只读小，可写需回滚三件套） | **高**：Phase 1 主线内容 |
+| 3 | **调参观测窗（只读）→ 动态 swappiness** | ROADMAP Phase 1 已定案；**地基已打**：CAP_LMKD_CFG 存在性探测(probe.sh) + PSI avg10 采集 + 诊断包 meminfo 快照 + spec 已侦查参数路径(device_config lmkd_native / minfree 六档 / lmkd.reinit, 2026-09-28)；**缺的是本体**——面板常驻展示 swappiness/ZRAM/minfree/device_config 当前值与出厂对照(实测面板+webroot 对这 4 类关键词 0 命中) | LMKD-PSI-Activator §2.4 | 中偏小（探针可扩 probe.sh 骨架，主要是面板卡片+快照对照） | **高**：Phase 1 主线内容，也是写操作「改前快照」的前置 |
 | 4 | **swap/水位作为激进回收补充触发源** | 现有触发仅 PSI+水位 | OomAdjuster §2.5 | 小 | 中 |
 | 5 | **保活策略安全度量（Shadow Evaluation）** | 缺「策略是否帮倒忙」的度量 | ForeSight §2.6 | 中 | 中：与 #2 同属可观测性，可合并设计 |
 | 6 | **动态保活优先级（无模型轻量版）** | 静态白名单外的补充信号 | ForeSight §2.6 | 中 | 中低：先做信号采集，模型后置 |
