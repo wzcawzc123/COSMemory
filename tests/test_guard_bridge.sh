@@ -58,4 +58,16 @@ printf '{\n  "guard": { "mode": "observe" }\n}\n' > "$jc"
 guard_bridge
 t_assert "缺freeze节=零行" "0" "$(grep -c '^FREEZE' $BRIDGE)"
 
+# ===== 名单不可读 → 保留旧桥 (2026-10-05 no-white 修复) =====
+printf '{\nWHITE com.tencent.mm\n}\n' > "$MOD/config/名单列表.conf"
+LIST_PATH="$MOD/config/名单列表.conf"
+guard_bridge
+t_assert "可读时桥含WHITE" "1" "$(grep -c '^WHITE ' $BRIDGE)"
+cp "$BRIDGE" "$TMP/good.conf"
+LIST_PATH="$MOD/config/不存在.conf"
+if guard_bridge; then r=0; else r=1; fi
+t_assert "不可读返回失败" "1" "$r"
+t_assert "旧桥未被覆盖" "$(cat $TMP/good.conf)" "$(cat $BRIDGE)"
+LIST_PATH="$MOD/config/名单列表.conf"
+
 rm -rf "$TMP"; t_done

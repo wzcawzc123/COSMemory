@@ -36,3 +36,15 @@ parse_lists() {
       printf "WHITE_LIST=\"%s\"\nKILL_LIST=\"%s\"\nFREEZE_LIST=\"%s\"\nLIST_BAD=%d\nLIST_BAD_DETAIL=\"%s\"\nFREEZE_CONFLICT=\"%s\"\n", w, k, f, bad, detail, conflict
     }' "$1"
 }
+
+# load_lists <名单文件> — 容错加载: 解析到 WHITE_LIST/KILL_LIST/FREEZE_LIST/LIST_BAD 等变量
+# 返回0=成功; 返回1=文件不可读/awk无输出 — 此时不 eval, 调用方既有变量不被污染。
+# 背景(2026-10-05 修 no-white): 开机时 /sdcard(FUSE) 晚于 boot_completed 就绪,
+# 名单读不到 → 旧逻辑 eval 空串仍继续写桥 → 写出无白名单桥 → COSGuard no-white 降级。
+load_lists() {
+  [ -f "$1" ] && [ -r "$1" ] || return 1
+  local out
+  out=$(parse_lists "$1" 2>/dev/null) || return 1
+  [ -n "$out" ] || return 1
+  eval "$out"
+}

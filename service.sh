@@ -27,10 +27,17 @@ while [ "$(getprop sys.boot_completed)" != "1" ]; do sleep 5; done
 sleep 3
 
 # 名单开机对齐 (兜底): 安装期未救回的丢失在此恢复; 正常态为 noop/bak_updated
-LIST_PATH="${LIST_PATH:-/sdcard/Android/COSMemory/名单列表.conf}" \
-LIST_BAK="$MODDIR/data/list.bak" \
-LIST_FRESH="$MODDIR/config/名单列表.conf" \
-MODDIR="$MODDIR" \
+# 2026-10-05: /sdcard(FUSE) 就绪晚于 boot_completed — 等名单文件真正可读再对齐,
+# 否则 cp 必失败(LISTRESYNC fail) 且首轮 guard_bridge 会因名单不可读写出无白名单桥(no-white)。
+LIST_PATH="${LIST_PATH:-/sdcard/Android/COSMemory/名单列表.conf}"
+LIST_BAK="$MODDIR/data/list.bak"
+LIST_FRESH="$MODDIR/config/名单列表.conf"
+i=0
+while [ ! -r "$LIST_PATH" ] && [ "$i" -lt 30 ]; do sleep 2; i=$((i+1)); done
+if [ ! -r "$LIST_PATH" ]; then
+  echo "[$(date '+%F %T')] LISTWAIT timeout (60s) — /sdcard 未就绪, 名单对齐延后" >> "$STATS_LOG"
+fi
+LIST_PATH="$LIST_PATH" LIST_BAK="$LIST_BAK" LIST_FRESH="$LIST_FRESH" MODDIR="$MODDIR" \
   sh "$MODDIR/engine/listmigrate.sh" > "$MODDIR/data/.listresync" 2>&1 || \
   echo "[$(date '+%F %T')] LISTRESYNC fail $(cat "$MODDIR/data/.listresync" 2>/dev/null)" >> "$STATS_LOG"
 grep -q . "$MODDIR/data/.listresync" 2>/dev/null && \
@@ -47,7 +54,14 @@ while :; do
     echo "[$(date '+%F %T')] WATCHDOG restart prev_alive=$PA" >> "$STATS_LOG"
     WORKDIR="$MODDIR/data" STATS_LOG="$STATS_LOG" run "$MODDIR/engine/memory.sh" >/dev/null 2>&1 &
   fi
-  guard_bridge
+  if ! guard_bridge; then
+    # 每次中断只记一行 (30s 循环限流), 标志在桥恢复后清除
+    [ -f "$MODDIR/data/.bridge_skip" ] || {
+      echo "[$(date '+%F %T')] BRIDGE_SKIP list-unreadable (保留旧桥)" >> "$STATS_LOG"
+      : > "$MODDIR/data/.bridge_skip"; }
+  else
+    rm -f "$MODDIR/data/.bridge_skip"
+  fi
   guard_harvest
   sleep 30
 done

@@ -49,7 +49,14 @@ while :; do
     sleep 30; continue
   fi
   lru_parse "$WORKDIR/snapshot.txt" > "$WORKDIR/parsed.txt"   # 原始→解析流
-  eval "$(parse_lists "${LIST_PATH:-/sdcard/Android/COSMemory/名单列表.conf}")"
+  # 名单暂不可读 → 跳过本轮 (防空名单跑激进回收/丢保活); 只在每次中断首轮回调一行日志
+  if ! load_lists "${LIST_PATH:-/sdcard/Android/COSMemory/名单列表.conf}"; then
+    [ -f "$WORKDIR/.listskip" ] || {
+      echo "[$(date '+%F %T')] LIST_SKIP list-unreadable" >> "$STATS_LOG"
+      : > "$WORKDIR/.listskip"; }
+    sleep 30; continue
+  fi
+  rm -f "$WORKDIR/.listskip"
   [ "${LIST_BAD:-0}" -gt 0 ] && echo "LIST_BAD=$LIST_BAD detail=$LIST_BAD_DETAIL" >> "$STATS_LOG"
   detect_death "$WORKDIR/parsed.txt" "$WHITE_LIST"
   plan_keepalive "$WORKDIR/parsed.txt" "$WHITE_LIST" "$KEEPADJ_TARGET" > "$WORKDIR/acts"

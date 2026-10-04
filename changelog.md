@@ -1,5 +1,13 @@
 # 【更新日志】
 
+## v1.1.5 2026.10.05 (稳定性: 开机名单竞态根因修复)
+- **修: 开机后防线偶发 no-white 降级 (根因级)** — 日用 5 天日志取证: 10-04 六次 `config ERROR no-white` 中四次精确对应重启 (`SHUTDOWN 20:41:43 → no-white 20:42:42` 等), 同窗口 `LISTRESYNC fail cp: /sdcard/... No such file or directory`。根因: `/sdcard`(FUSE) 就绪晚于 `boot_completed`, 名单读不到 → `parse_lists` 无输出 → `guard_bridge` 仍写出**无 WHITE 行的桥**覆盖好桥 → COSGuard 判 no-white 降级 observe, 拦截空窗至下一轮
+- **修: guard_bridge 名单不可读时保留旧桥** — 新增 `engine/lists.sh::load_lists()` (读失败返回 1 且不污染既有变量); 桥写入前先 `load_lists`, 失败 `return 1` 不覆盖, service.sh 记一行 `BRIDGE_SKIP`(带 30s 循环限流)
+- **修: 引擎名单读取容错** — memory.sh 同改 `load_lists`, 读不到名单直接跳过本轮 (`LIST_SKIP`, 中断期间只记一行), 防止空白名单进入激进回收/丢保活
+- **修: 开机名单对齐竞态** — service.sh 等名单文件真正可读(最多 60s)再跑 listmigrate, 消除 `LISTRESYNC fail`；超时记 `LISTWAIT timeout` 不阻塞主循环
+- **增: 回归测试** — test_lists +6 断言 (load_lists 缺失/不可读不污染/正常解析), test_guard_bridge +3 断言 (不可读返回失败且旧桥不被覆盖); shell 全套 20 文件全绿
+
+
 ## v1.1.4 2026.10.04 (防线页可视化修复: 趋势图数值 + 应用名找回)
 - **修: 24 小时趋势图看不出信息** — 柱状只有图形没有数量, 手机 WebView 无 hover 导致 `<title>` 提示永远弹不出来; 改为柱顶直接标注数值 (有事件的小时), 右上角显示峰值, 全零时显示「今日无拦截」
 - **修: 白名单卡片应用名被挤没 (真 bug)** — 顶行应用名与状态胶囊同行, `PASS_NO_RULE` 这类长码胶囊 `flex:0 0 auto` 不收缩, 把应用名挤成 0 宽 (像素取证: 名字区域完全空白); 改为 flex-wrap 换行 + 应用名 `flex:1 1 auto` 优先占位 + 胶囊可收缩省略
