@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import type { GuardStats } from '../composables/guard'
-import { guardName, guardDate } from '../composables/guard'
+import { guardName, guardDate, actLabel } from '../composables/guard'
 import { parseListConf, validateEdit } from '../composables/listconf'
 import { detectBridge } from '../composables/ksu'
 import { listEdit } from '../composables/listedit-client'
@@ -27,6 +27,12 @@ const RULE_LABEL: Record<string, string> = {
   'o-stop': 'Oplus强停', frozen: '冻结同步异常', cached: '缓存超限',
   empty: '空进程超限', cpu: 'CPU超限',
 }
+/** 有事件的小时 → 数值标注 (柱顶上方); 空数组 = 今日无拦截 */
+const barLabels = computed(() => (props.stats?.hourly ?? [])
+  .filter(x => x.block + x.fuse > 0)
+  .map(x => ({ h: x.h, v: x.block + x.fuse, x: (x.h * 16 + 8) / (24 * 16) * 100 })))
+const peak = computed(() => Math.max(0,
+  ...(props.stats?.hourly.map(x => x.block + x.fuse) ?? [0])))
 const stale = computed(() =>
   props.stats != null && props.stats.snapshot_age_s > 3600)
 const moduleOk = computed(() => props.stats?.module === 'installed')
@@ -65,17 +71,22 @@ const fmtHour = (h: number) => String(h).padStart(2, '0') + ':00'
     <div class="card">
       <div class="gd-row"><b>24 小时拦截趋势</b>
         <span class="gd-legend"><i class="gd-b"></i>拦截 <i class="gd-f"></i>保险丝</span></div>
-      <svg class="gd-bars" :viewBox="`0 0 ${24*16} 64`" preserveAspectRatio="none">
-        <g v-for="x in stats.hourly" :key="x.h">
-          <rect :x="x.h*16+1" :width="14" :y="64 - (x.block/hMax)*60"
-                :height="(x.block/hMax)*60" fill="var(--ok, #e8863a)" rx="1"/>
-          <rect :x="x.h*16+1" :width="14"
-                :y="64 - (x.block+x.fuse)/hMax*60"
-                :height="(x.fuse/hMax)*60" fill="#e5484d" rx="1">
-            <title>{{ fmtHour(x.h) }} 拦截{{ x.block }} 保险丝{{ x.fuse }}</title>
-          </rect>
-        </g>
-      </svg>
+      <div class="gd-chart">
+        <svg class="gd-bars" :viewBox="`0 0 ${24*16} 64`" preserveAspectRatio="none">
+          <g v-for="x in stats.hourly" :key="x.h">
+            <rect :x="x.h*16+1" :width="14" :y="64 - (x.block/hMax)*60"
+                  :height="(x.block/hMax)*60" fill="var(--ok, #e8863a)" rx="1"/>
+            <rect :x="x.h*16+1" :width="14"
+                  :y="64 - (x.block+x.fuse)/hMax*60"
+                  :height="(x.fuse/hMax)*60" fill="#e5484d" rx="1">
+              <title>{{ fmtHour(x.h) }} 拦截{{ x.block }} 保险丝{{ x.fuse }}</title>
+            </rect>
+          </g>
+        </svg>
+        <span v-for="l in barLabels" :key="'v'+l.h" class="gd-vlab"
+              :style="{ left: l.x + '%' }">{{ l.v }}</span>
+        <span class="gd-vmax">{{ peak > 0 ? '峰值 ' + peak : '今日无拦截' }}</span>
+      </div>
       <div class="gd-axis"><span>00时</span><span>12时</span><span>23时</span></div>
     </div>
     <!-- W3 规则命中分布 -->
@@ -95,7 +106,7 @@ const fmtHour = (h: number) => String(h).padStart(2, '0') + ':00'
         <div class="gd-app-top">
           <b>{{ guardName(w.pkg) }}</b>
           <span class="pill" :class="w.last_act === 'BLOCK' ? 'ok' : ''">
-            {{ w.last_act === 'BLOCK' ? '已保活' : (w.last_act || '无事件') }}</span>
+            {{ actLabel(w.last_act) }}</span>
         </div>
         <div class="gd-app-n"><b>{{ w.block }}</b><i>今日拦截</i></div>
         <div class="gd-app-t">最近 {{ fmtTs(w.last_ts) }}</div>
@@ -121,7 +132,7 @@ const fmtHour = (h: number) => String(h).padStart(2, '0') + ':00'
         <span class="gd-ev-p">{{ guardName(r.pkg) }}</span>
         <span class="gd-ev-r">{{ (RULE_LABEL[r.rule] ?? r.rule) || '—' }}</span>
         <span class="pill" :class="r.act === 'BLOCK' ? 'ok'
-          : r.act === 'FUSE' || r.act === 'ERROR' ? 'bad' : ''">{{ r.act }}</span>
+          : r.act === 'FUSE' || r.act === 'ERROR' ? 'bad' : ''">{{ actLabel(r.act) }}</span>
         <button class="gd-ev-fz" v-if="frozen[r.pkg] === '已加'" disabled>已加</button>
         <button class="gd-ev-fz" v-else @click="addFreeze(r.pkg)" :title="frozen[r.pkg] || ''">＋FREEZE</button>
         <div class="gd-ev-reason">{{ r.reason }}</div>
@@ -138,12 +149,17 @@ const fmtHour = (h: number) => String(h).padStart(2, '0') + ':00'
 .gd-num i{white-space:nowrap}
 .gd-num{text-align:center}.gd-num b{font-size:22px;display:block}
 .gd-num i{font-style:normal;font-size:11px;color:var(--ink2,#888)}
+.gd-chart{position:relative;padding-top:14px}
 .gd-bars{width:100%;height:64px;display:block}
+.gd-vlab{position:absolute;top:0;transform:translateX(-50%);font-size:10.5px;font-weight:700;
+  color:var(--ink,#4a2b2b);line-height:1;pointer-events:none}
+.gd-vmax{position:absolute;top:0;right:0;font-size:10px;color:var(--ink2,#888);line-height:1}
 .gd-axis{display:flex;justify-content:space-between;font-size:10px;color:var(--ink2,#888)}
 .gd-legend{font-size:11px;color:var(--ink2,#888);display:flex;gap:8px;align-items:center}
 .gd-legend i{width:9px;height:9px;display:inline-block;border-radius:2px}
 .gd-b{background:#e8863a}.gd-f{background:#e5484d}
-.gd-rule{display:grid;grid-template-columns:72px 1fr 32px;gap:8px;align-items:center;margin-top:6px}
+.gd-rule{display:grid;grid-template-columns:minmax(84px,auto) 1fr 32px;gap:8px;align-items:center;margin-top:6px}
+.gd-rl{white-space:nowrap}
 .gd-rbar{background:rgba(128,128,128,.18);height:10px;border-radius:5px;overflow:hidden}
 .gd-rbar i{display:block;height:100%;background:#e8863a}
 .gd-rn{text-align:right;font-size:12px}

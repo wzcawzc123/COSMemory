@@ -25,6 +25,22 @@ export function guardName(pkg: string): string {
   return GUARD_NAME[pkg] ?? pkg.split('.').pop() ?? pkg
 }
 
+/** act 码 → 短中文 (卡片胶囊/事件流); 未知码原样返回, 空值 = 无事件 */
+export const ACT_LABEL: Record<string, string> = {
+  BLOCK: '已保活',
+  FUSE: '保险丝',
+  ERROR: '异常',
+  PASS_NO_RULE: '放行',
+  PASS_DUP: '放行·重复',
+  PASS_OBSERVE: '观察',
+  FREEZE: '已封杀',
+  FREEZE_BLOCK: '已封杀',
+  RECLAIM: '已回收',
+}
+export function actLabel(act: string): string {
+  return ACT_LABEL[act] ?? (act || '无事件')
+}
+
 const emptyHourly = () => Array.from({ length: 24 }, (_, h) => ({ h, block: 0, fuse: 0 }))
 
 export function parseGuard(json: string): GuardStats | null {

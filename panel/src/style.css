@@ -108,9 +108,9 @@ body{
 .alert.ok{background:var(--green-bg); color:var(--green)}
 
 .gd-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
-.gd-app-top{display:flex;justify-content:space-between;align-items:center;gap:8px}
-.gd-app-top>b{white-space:nowrap;min-width:0;overflow:hidden;text-overflow:ellipsis}
-.gd-app-top>.pill{flex:0 0 auto}
+.gd-app-top{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.gd-app-top>b{white-space:nowrap;flex:1 1 auto;min-width:60px;overflow:hidden;text-overflow:ellipsis}
+.gd-app-top>.pill{flex:0 1 auto;min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis}
 .gd-app-n b{font-size:20px}
 .gd-app-n i{font-style:normal;font-size:11px;color:var(--ink2,#888);margin-left:4px}
 .gd-app-t{font-size:11px;color:var(--ink2,#888);margin-top:4px}

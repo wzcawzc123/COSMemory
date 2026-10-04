@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { parseGuard, guardName } from './guard'
+import { parseGuard, guardName, actLabel } from './guard'
 
 const FULL = JSON.stringify({
   date: '2026-09-30', mode: 'guard', module: 'installed', live_today: true,
@@ -74,5 +74,21 @@ describe('reclaim field', () => {
     const g = parseGuard('{"date":"d","reclaimAggressive":true,"reclaimDepth":"previous"}')!
     expect(g.reclaimAggressive).toBe(true)
     expect(g.reclaimDepth).toBe('previous')
+  })
+})
+
+describe('actLabel', () => {
+  it('maps known act codes to short Chinese labels', () => {
+    expect(actLabel('BLOCK')).toBe('已保活')
+    expect(actLabel('PASS_NO_RULE')).toBe('放行')
+    expect(actLabel('FUSE')).toBe('保险丝')
+    expect(actLabel('ERROR')).toBe('异常')
+    expect(actLabel('FREEZE')).toBe('已封杀')
+  })
+  it('falls back to raw code for unknown act', () => {
+    expect(actLabel('SOMETHING_NEW')).toBe('SOMETHING_NEW')
+  })
+  it('empty act shows 无事件', () => {
+    expect(actLabel('')).toBe('无事件')
   })
 })
