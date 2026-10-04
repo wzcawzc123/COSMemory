@@ -4,8 +4,8 @@ import { themeMode, setTheme, type ThemeMode } from '../composables/theme'
 import { detectBridge, execRead } from '../composables/ksu'
 import type { GuardStats } from '../composables/guard'
 
-const props = defineProps<{ logTail: string[]; guard: GuardStats | null }>()
-const emit = defineEmits<{ (e: 'set-guard-mode', v: boolean): void; (e: 'set-reclaim', p: { aggressive?: boolean; depth?: string }): void }>()
+const props = defineProps<{ logTail: string[]; guard: GuardStats | null; diagBusy: boolean }>()
+const emit = defineEmits<{ (e: 'set-guard-mode', v: boolean): void; (e: 'set-reclaim', p: { aggressive?: boolean; depth?: string }): void; (e: 'export-diag'): void }>()
 
 // ---- 外观 ----
 const THEMES: { v: ThemeMode; label: string }[] = [
@@ -123,6 +123,15 @@ onMounted(async () => {
     </div>
   </div>
 
+  <!-- 诊断与反馈 -->
+  <div class="sec"><div class="b"><svg class="si" viewBox="0 0 24 24"><use href="#i-file-cloud-fill"/></svg></div><h2>诊断与反馈</h2></div>
+  <div class="card st-diag">
+    <div class="st-about-s">导出引擎/防线/设备诊断日志为单个文本文件，反馈问题时附带即可定位（只含模块日志与机型属性，不含个人数据；logcat 仅截取 COSGuard/COSMemory 相关行）。</div>
+    <button class="st-diag-btn" :disabled="diagBusy" @click="emit('export-diag')">
+      {{ diagBusy ? '导出中…' : '导出诊断日志' }}
+    </button>
+  </div>
+
   <!-- 设备信息 -->
   <div class="sec"><div class="b"><svg class="si" viewBox="0 0 24 24"><use href="#i-smartphone-fill"/></svg></div><h2>设备信息</h2></div>
   <div class="card st-dev">{{ dev }}</div>
@@ -173,3 +182,7 @@ onMounted(async () => {
 .st-about-line a{color:var(--green)}
 .st-about-path{margin-top:10px; font-family:ui-monospace,Menlo,monospace; font-size:11px}
 </style>
+.st-diag{display:flex; flex-direction:column; gap:10px}
+.st-diag-btn{width:100%; padding:10px; border-radius:12px; border:0; font-size:13px; font-weight:600;
+  background:var(--green); color:#fff; cursor:pointer}
+.st-diag-btn:disabled{opacity:.55}

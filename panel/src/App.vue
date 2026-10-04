@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { detectBridge, execRead, execReadBatch, type KsuBridge } from './composables/ksu'
+import { buildDiagCmd } from './composables/diagnostics'
 import { parseStats, parseCaps, whiteStatus, CAP_LABELS, type DayStats } from './composables/stats'
 import { parseGuard, guardDate, type GuardStats } from './composables/guard'
 import { initTheme, syncThemeFromModule } from './composables/theme'
@@ -27,6 +28,7 @@ const memtop = ref<MemRow[]>([])
 const frozen = ref<{ count: number; pkgs: string[] } | null>(null)
 const memLoading = ref(false)
 const freeing = ref(false)
+const diagBusy = ref(false)
 const toastMsg = ref('')
 const toastOk = ref(false)
 let toastTimer: number | undefined
@@ -41,6 +43,18 @@ function goTab(id: Tab) { activeTab.value = id; document.querySelector('.wrap')?
 let timer: number | undefined
 /* onPickDate: 模板里 guardDate 会被解包成字符串, .value 赋值在严格模式抛错导致选日期无效 */
 function onPickDate(d: string) { guardDate.value = d; void refresh() }
+/* exportDiag: 诊断包一次桥往返导出到 /sdcard/Download */
+async function exportDiag() {
+  const b = bridge.value
+  if (!b) { toast("无 KSU 桥", false); return }
+  diagBusy.value = true
+  try {
+    const r = await execRead(b, buildDiagCmd(MOD, LIST))
+    const path = r.trim().split("\n").pop() ?? ""
+    if (path.startsWith("/sdcard/")) toast("✓ 诊断包已导出: " + path.split("/").pop())
+    else toast("导出失败: " + (path.slice(0, 40) || "空回读"), false)
+  } catch (e) { toast("导出失败: " + String(e).slice(0, 60), false) } finally { diagBusy.value = false }
+}
 
 const MODE: Record<string, string> = {
   CAP_LRU: '进程快照', CAP_LRU_FALLBACK: '备用快照源', CAP_PSI: '内存压力',
@@ -248,7 +262,7 @@ onUnmounted(() => { if (timer) clearInterval(timer) })
       :freezeList="guard?.freezeList ?? []"
       :mod="MOD" @edited="refresh" />
     <SettingsView v-else
-      :log-tail="logTail" :guard="guard" @set-guard-mode="setGuardMode" @set-reclaim="setReclaim" />
+      :log-tail="logTail" :guard="guard" :diag-busy="diagBusy" @set-guard-mode="setGuardMode" @set-reclaim="setReclaim" @export-diag="exportDiag" />
   </div>
 
   <div v-if="toastMsg" class="toast" :class="{ ok: toastOk }">{{ toastMsg }}</div>

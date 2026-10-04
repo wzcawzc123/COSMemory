@@ -1,5 +1,12 @@
 # 【更新日志】
 
+## v1.1.2 2026.10.04 (诊断与日志: 一键导出诊断包)
+- **增: 设置页「导出诊断日志」** — 单条桥命令把引擎/防线/设备信息导出为 `/sdcard/Download/COSMemory_diag_<时间戳>.txt`, 社区反馈时附带即可定位; 14 段: version/device/memory/caps/engine/stats尾/guard日志3份/kill_capture尾/snapshot/config/名单/bridge/logcat/LSPosed防线日志
+- **增: LSPosed 防线日志段** — COSGuard 的 hook 日志不进 logcat (XposedModule.log 落 LSPosed 文件), 改从 `/data/adb/lspd/log/modules_*.log` 截取 cosguard/killLocked/FREEZE 相关行 (实机抓到 killLocked hooks=3 装载记录)
+- **修: 诊断命令段标题被吞** — 语句数组以空格拼接缺分号, 前一条 echo 把下一段标题吞成参数导致段落错乱; 改为 `OUT=...; { 语句; ...; } > "$OUT"` 结构化拼接, 实机复验 14 段全对
+- **修: 测试盲区** — 原诊断测试只查 contains 拦不住分隔符 bug; 新增「段标题均以 `; `/`{ ` 起始」结构断言 + 中文名单路径引号断言, vitest 92→96 全绿
+- **注: 隐私边界** — 诊断包只含模块自身日志 + 系统机型属性 + 名单包名, logcat 仅 grep cosguard\|cosmem 不导全量
+
 ## v1.1.1 2026.10.04 (面板三连修: 白屏根因/按钮反馈/日期切换)
 - **修: WebUI 打开白屏 1s+ (根因级)** — onMounted 在首帧前连发 8 条 ksu.exec 桥命令 (含 memtop ~3s), 桥同步阻塞 JS 线程导致 WebView 无法首绘; 改为 rAF+setTimeout 先画页面再拉数据 (骨架屏/连接中占位可见, 数据异步到位)。A/B 实测: 修复前冷开首帧 5.7~6.3s 纯灰, 修复后 ~1.1s 出内容 (对齐显示增强面板 714ms 水位)
 - **修: 日期切换无效 (防线页)** — App.vue 模板内联 `guardDate.value = d` 中 ref 被自动解包成字符串, 严格模式赋值抛错, 表现为"菜单关闭但日期不动"; 逻辑移入 script 层 onPickDate()
