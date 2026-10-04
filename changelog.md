@@ -1,5 +1,12 @@
 # 【更新日志】
 
+## v1.1.3 2026.10.04 (名单迁移: 覆盖安装不再丢用户名单)
+- **修: 覆盖/迭代安装丢用户名单 (根因级)** — 旧安装脚本 `[ -f 名单 ] || cp 出厂` 在安装期 /sdcard 可见性异常时误判名单不存在, `cp` 把用户新增的 WHITE/KILL/FREEZE 整个冲成出厂 3 条 (真机复现确认该路径是唯一能覆盖名单的写入点); 改为 `engine/listmigrate.sh` 双向对齐
+- **增: 名单备份 (data/list.bak)** — 编辑器每次写入自动同步备份, 备份随 `customize.sh` 迁移到新模块目录, 不受模块整目录替换影响
+- **增: 三方对齐** — 安装期 (customize.sh) + 开机 (service.sh) 自动对齐: 名单=出厂且备份有更多条目 → 恢复; 名单被删 → 从备份恢复; 全新安装 → 出厂并建备份; 判据用「名单是否等于出厂」区分事故与用户主动删除, 不会把用户主动删的条目加回来
+- **增: 回归测试** — `tests/test_migrate.sh` 20 断言覆盖全部对齐场景 (事故恢复/用户态刷新/删除恢复/全新装/noop/无源/编辑联动), shell 全套 + vitest 98 全绿
+- **改: 诊断导出弹窗显示完整路径** — toast 由文件名改为完整路径并延长至 6s (供阅读/截图), 卡片文案注明保存到 /sdcard/Download/
+
 ## v1.1.2 2026.10.04 (诊断与日志: 一键导出诊断包)
 - **增: 设置页「导出诊断日志」** — 单条桥命令把引擎/防线/设备信息导出为 `/sdcard/Download/COSMemory_diag_<时间戳>.txt`, 社区反馈时附带即可定位; 14 段: version/device/memory/caps/engine/stats尾/guard日志3份/kill_capture尾/snapshot/config/名单/bridge/logcat/LSPosed防线日志
 - **增: LSPosed 防线日志段** — COSGuard 的 hook 日志不进 logcat (XposedModule.log 落 LSPosed 文件), 改从 `/data/adb/lspd/log/modules_*.log` 截取 cosguard/killLocked/FREEZE 相关行 (实机抓到 killLocked hooks=3 装载记录)

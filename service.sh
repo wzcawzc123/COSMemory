@@ -25,6 +25,17 @@ guard_harvest() {
 
 while [ "$(getprop sys.boot_completed)" != "1" ]; do sleep 5; done
 sleep 3
+
+# 名单开机对齐 (兜底): 安装期未救回的丢失在此恢复; 正常态为 noop/bak_updated
+LIST_PATH="${LIST_PATH:-/sdcard/Android/COSMemory/名单列表.conf}" \
+LIST_BAK="$MODDIR/data/list.bak" \
+LIST_FRESH="$MODDIR/config/名单列表.conf" \
+MODDIR="$MODDIR" \
+  sh "$MODDIR/engine/listmigrate.sh" > "$MODDIR/data/.listresync" 2>&1 || \
+  echo "[$(date '+%F %T')] LISTRESYNC fail $(cat "$MODDIR/data/.listresync" 2>/dev/null)" >> "$STATS_LOG"
+grep -q . "$MODDIR/data/.listresync" 2>/dev/null && \
+  echo "[$(date '+%F %T')] LISTRESYNC $(cat "$MODDIR/data/.listresync")" >> "$STATS_LOG"
+
 while :; do
   if ! pgrep -f 'engine/memory.sh' >/dev/null 2>&1; then
     PA=unknown

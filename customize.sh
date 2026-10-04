@@ -17,9 +17,16 @@ if [ -f "$OLDCFG" ] && [ -f "$MODPATH/config/memory.json" ]; then
     && ui_print "- 已保留用户配置 (拦截模式/激进回收/阈值)"
 fi
 
-# 2) 名单目录初始化 / 旧配置迁移
+# 2) 名单对齐 (listmigrate) — 取代旧 "[ -f ] || cp": 该判断在安装期 /sdcard 可见性异常时
+#    会误判名单不存在 → cp 出厂名单覆盖用户条目 (真机丢名单事故根因)。
+#    现改为: 用户名单在 → 与 data/list.bak 双向对齐; 名单缺 → 从备份恢复; 全新装 → 出厂。
 mkdir -p "$OUTDIR"
-[ -f "$OUTDIR/名单列表.conf" ] || cp "$MODPATH/config/名单列表.conf" "$OUTDIR/"
+LIST_PATH="$OUTDIR/名单列表.conf" \
+LIST_BAK="$MODPATH/data/list.bak" \
+LIST_FRESH="$MODPATH/config/名单列表.conf" \
+MODDIR="$MODPATH" \
+  sh "$MODPATH/engine/listmigrate.sh" > "$MODPATH/data/.listresync" 2>&1
+ui_print "- 名单对齐: $(sed -n 's/^RESYNC=//p' "$MODPATH/data/.listresync" 2>/dev/null || echo noop)"
 [ -f "$MODPATH/config/memory.json" ] && [ ! -f "$OUTDIR/memory.json" ] \
   && cp "$MODPATH/config/memory.json" "$OUTDIR/"
 

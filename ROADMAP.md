@@ -1,6 +1,6 @@
 # COSMemory 路线图
 
-> 状态快照：**2026-10-04 · v1.1.2**（诊断包导出: 设置页一键导出 14 段诊断到 /sdcard/Download, 含 LSPosed 防线日志段; 修语句拼接缺分号致段标题被吞 + 补结构断言。此前 v1.1.1（面板三连修：白屏根因 boot-after-paint（冷开首帧 5.7s→1.1s A/B 实测）、日期切换 ref 解包赋值 bug、日期菜单 dropup 裁剪；+按钮底部 toast 反馈、app-shell 导航根治下沉）。此前 v1.0 封版收数：guard\/FREEZE 三天 BLOCK 11 全正向、FAILED=0、保护机制实弹全过；发布帖待发）
+> 状态快照：**2026-10-04 · v1.1.3**（名单迁移: 覆盖安装丢用户名单根因修复, listmigrate 三方对齐 + data/list.bak 备份 + 20 断言回归; 诊断弹窗显示完整路径。此前 v1.1.2（诊断包导出: 设置页一键导出 14 段诊断到 /sdcard/Download, 含 LSPosed 防线日志段; 修语句拼接缺分号致段标题被吞 + 补结构断言。此前 v1.1.1（面板三连修：白屏根因 boot-after-paint（冷开首帧 5.7s→1.1s A/B 实测）、日期切换 ref 解包赋值 bug、日期菜单 dropup 裁剪；+按钮底部 toast 反馈、app-shell 导航根治下沉）。此前 v1.0 封版收数：guard\/FREEZE 三天 BLOCK 11 全正向、FAILED=0、保护机制实弹全过；发布帖待发））
 
 ## 当前状态
 

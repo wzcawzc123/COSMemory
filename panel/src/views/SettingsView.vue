@@ -126,7 +126,7 @@ onMounted(async () => {
   <!-- 诊断与反馈 -->
   <div class="sec"><div class="b"><svg class="si" viewBox="0 0 24 24"><use href="#i-file-cloud-fill"/></svg></div><h2>诊断与反馈</h2></div>
   <div class="card st-diag">
-    <div class="st-about-s">导出引擎/防线/设备诊断日志为单个文本文件，反馈问题时附带即可定位（只含模块日志与机型属性，不含个人数据；logcat 仅截取 COSGuard/COSMemory 相关行）。</div>
+    <div class="st-about-s">导出引擎/防线/设备诊断日志为单个文本文件，保存到 /sdcard/Download/（文件名含时间戳），反馈问题时附带即可定位（只含模块日志与机型属性，不含个人数据；logcat 仅截取 COSGuard/COSMemory 相关行）。</div>
     <button class="st-diag-btn" :disabled="diagBusy" @click="emit('export-diag')">
       {{ diagBusy ? '导出中…' : '导出诊断日志' }}
     </button>

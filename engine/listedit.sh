@@ -28,6 +28,13 @@ conf_stats() { # $1=file → "bad_count conflict_count"
   echo "$LIST_BAD $(printf '%s' "$FREEZE_CONFLICT" | wc -w)"
 }
 
+# 名单备份: 每次成功写入后同步到模块 data/list.bak (覆盖安装迁移的恢复源)
+sync_bak() {
+  b="${LIST_BAK:-$MODDIR/data/list.bak}"
+  mkdir -p "$(dirname "$b")" 2>/dev/null
+  cp "$CONF" "$b" 2>/dev/null
+}
+
 do_add() {
   g="$1"; t="$2"
   [ -f "$CONF" ] || { echo "ERR:iofail"; return 1; }
@@ -56,6 +63,7 @@ do_add() {
     rm -f "$tmp"; echo "ERR:parsefail"; return 1
   fi
   mv -f "$tmp" "$CONF" || { rm -f "$tmp"; echo "ERR:iofail"; return 1; }
+  sync_bak
   # WARN 语义 = bridge 未产出文件 (chown 等非致命失败不告警, 文件已在即 hook 可读)
   if ! guard_bridge 2>/dev/null && [ ! -f "$BRIDGE" ]; then
     echo "OK"; echo "WARN:bridge"; return 0
@@ -78,6 +86,7 @@ do_del() {
     rm -f "$tmp"; echo "ERR:parsefail"; return 1
   fi
   mv -f "$tmp" "$CONF" || { rm -f "$tmp"; echo "ERR:iofail"; return 1; }
+  sync_bak
   # WARN 语义 = bridge 未产出文件 (chown 等非致命失败不告警, 文件已在即 hook 可读)
   if ! guard_bridge 2>/dev/null && [ ! -f "$BRIDGE" ]; then
     echo "OK"; echo "WARN:bridge"; return 0

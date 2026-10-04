@@ -120,6 +120,7 @@ body{
 /* toast: 按钮点击反馈(导航栏上方) */
 .toast{position:fixed; left:50%; transform:translateX(-50%); bottom:calc(76px + env(safe-area-inset-bottom,0px));
   z-index:50; max-width:86vw; padding:11px 20px; border-radius:100px; font-size:13.5px; font-weight:600;
+  word-break:break-all; text-align:center;
   background:#4A2B2B; color:#FBF2EE; box-shadow:0 8px 24px rgba(74,43,43,.28);
   animation:toastin .18s ease-out;}
 .toast.ok{background:#5B9A6E; color:#fff}

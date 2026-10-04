@@ -1,6 +1,6 @@
 id=COSMemory
 name=COSMemory 内存管理
-version=1.1.2
-versionCode=11002
+version=1.1.3
+versionCode=11003
 author=是你吗薰儿
 description=ColorOS 15/16 白名单保活+智能回收. 基于 A1Memory(HChai/OneB1ank) 二次开发, GPLv3.

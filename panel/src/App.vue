@@ -32,10 +32,10 @@ const diagBusy = ref(false)
 const toastMsg = ref('')
 const toastOk = ref(false)
 let toastTimer: number | undefined
-function toast(msg: string, ok = true) {
+function toast(msg: string, ok = true, duration = 2600) {
   toastMsg.value = msg; toastOk.value = ok
   if (toastTimer) clearTimeout(toastTimer)
-  toastTimer = window.setTimeout(() => { toastMsg.value = '' }, 2600)
+  toastTimer = window.setTimeout(() => { toastMsg.value = '' }, duration)
 }
 type Tab = 'dash' | 'defense' | 'system' | 'list' | 'set'
 const activeTab = ref<Tab>('dash')
@@ -51,7 +51,7 @@ async function exportDiag() {
   try {
     const r = await execRead(b, buildDiagCmd(MOD, LIST))
     const path = r.trim().split("\n").pop() ?? ""
-    if (path.startsWith("/sdcard/")) toast("✓ 诊断包已导出: " + path.split("/").pop())
+    if (path.startsWith("/sdcard/")) toast("✓ 已导出 " + path, true, 6000)
     else toast("导出失败: " + (path.slice(0, 40) || "空回读"), false)
   } catch (e) { toast("导出失败: " + String(e).slice(0, 60), false) } finally { diagBusy.value = false }
 }
