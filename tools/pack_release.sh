@@ -28,7 +28,8 @@ with zipfile.ZipFile(out, 'w', zipfile.ZIP_DEFLATED) as z:
             if relf in skip: continue
             p = os.path.join(dp, fn)
             z.write(p, relf); n += 1
-    z.write(apk, 'assets/COSGuard-' + os.path.basename(out).split('_',1)[1].replace('.zip','') + '.apk'); n += 1
+    # 保留 APK 自身文件名 (COSGuard 未发新版时不得谎报为本版本号); customize.sh 用 glob 取
+    z.write(apk, 'assets/' + os.path.basename(apk)); n += 1
 print(f'entries={n}')
 PY
 md5sum "$OUT"; rm -rf "$STAGE"
