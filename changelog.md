@@ -4,7 +4,8 @@
 - **增: 设置页「导出诊断日志」** — 单条桥命令把引擎/防线/设备信息导出为 `/sdcard/Download/COSMemory_diag_<时间戳>.txt`, 社区反馈时附带即可定位; 14 段: version/device/memory/caps/engine/stats尾/guard日志3份/kill_capture尾/snapshot/config/名单/bridge/logcat/LSPosed防线日志
 - **增: LSPosed 防线日志段** — COSGuard 的 hook 日志不进 logcat (XposedModule.log 落 LSPosed 文件), 改从 `/data/adb/lspd/log/modules_*.log` 截取 cosguard/killLocked/FREEZE 相关行 (实机抓到 killLocked hooks=3 装载记录)
 - **修: 诊断命令段标题被吞** — 语句数组以空格拼接缺分号, 前一条 echo 把下一段标题吞成参数导致段落错乱; 改为 `OUT=...; { 语句; ...; } > "$OUT"` 结构化拼接, 实机复验 14 段全对
-- **修: 测试盲区** — 原诊断测试只查 contains 拦不住分隔符 bug; 新增「段标题均以 `; `/`{ ` 起始」结构断言 + 中文名单路径引号断言, vitest 92→96 全绿
+- **修: 诊断按钮样式失效** — `.st-diag` 样式块被写到 `</style>` 之外整段失效, 按钮渲染成浏览器默认灰样式 (真机 WebUI 截图发现); 移入 style 内恢复绿色胶囊, 并补「样式必须在 style 标签内」结构测试
+- **修: 测试盲区** — 原诊断测试只查 contains 拦不住分隔符 bug; 新增「段标题均以 `; `/`{ ` 起始」结构断言 + 中文名单路径引号断言, vitest 92→98 全绿
 - **注: 隐私边界** — 诊断包只含模块自身日志 + 系统机型属性 + 名单包名, logcat 仅 grep cosguard\|cosmem 不导全量
 
 ## v1.1.1 2026.10.04 (面板三连修: 白屏根因/按钮反馈/日期切换)
