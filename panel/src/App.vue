@@ -216,6 +216,22 @@ async function setReclaim(patch: { aggressive?: boolean; depth?: string }) {
   } catch (e) { error.value = String(e) }
 }
 
+/** URO 桥接开关：写开关文件（URO 每个策略边界热读），回读验证 */
+const URO_CONF = '/sdcard/Android/UnifiedRootOptimizer/uro.conf'
+async function setUroBridge(v: boolean) {
+  const b = bridge.value
+  if (!b) { error.value = '无 KSU 桥'; return }
+  const val = v ? 1 : 0
+  try {
+    await execRead(b, `mkdir -p /sdcard/Android/UnifiedRootOptimizer && echo BRIDGE_ENFORCE=${val} > ${URO_CONF}`)
+    const back = await execRead(b, `grep '^BRIDGE_ENFORCE=' ${URO_CONF} 2>/dev/null`)
+    if (back.trim() === `BRIDGE_ENFORCE=${val}`) {
+      error.value = ''
+      alert(v ? '已开启：URO 下个策略事件起接管回收策略' : '已关闭：URO 停止写入，本页手动控制生效')
+    } else error.value = 'URO 桥接开关写入失败: 回读不符'
+  } catch (e) { error.value = String(e) }
+}
+
 /* boot-after-paint: ksu.exec 同步阻塞 JS 线程, 若在 onMounted 直接跑 8 条桥命令
    (含 memtop ~3s), WebView 首帧会被推迟 5s+ (灰屏根因)。
    rAF 内只做调度, setTimeout 让出主线程给渲染, 先画首帧再拉数据。 */
@@ -262,7 +278,7 @@ onUnmounted(() => { if (timer) clearInterval(timer) })
       :freezeList="guard?.freezeList ?? []"
       :mod="MOD" @edited="refresh" />
     <SettingsView v-else
-      :log-tail="logTail" :guard="guard" :diag-busy="diagBusy" @set-guard-mode="setGuardMode" @set-reclaim="setReclaim" @export-diag="exportDiag" />
+      :log-tail="logTail" :guard="guard" :diag-busy="diagBusy" @set-guard-mode="setGuardMode" @set-reclaim="setReclaim" @set-uro-bridge="setUroBridge" @export-diag="exportDiag" />
   </div>
 
   <div v-if="toastMsg" class="toast" :class="{ ok: toastOk }">{{ toastMsg }}</div>

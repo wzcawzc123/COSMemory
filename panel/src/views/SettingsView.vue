@@ -5,7 +5,19 @@ import { detectBridge, execRead } from '../composables/ksu'
 import type { GuardStats } from '../composables/guard'
 
 const props = defineProps<{ logTail: string[]; guard: GuardStats | null; diagBusy: boolean }>()
-const emit = defineEmits<{ (e: 'set-guard-mode', v: boolean): void; (e: 'set-reclaim', p: { aggressive?: boolean; depth?: string }): void; (e: 'export-diag'): void }>()
+const emit = defineEmits<{ (e: 'set-guard-mode', v: boolean): void; (e: 'set-reclaim', p: { aggressive?: boolean; depth?: string }): void; (e: 'export-diag'): void; (e: 'set-uro-bridge', v: boolean): void }>()
+
+// ---- URO 统一调度桥接开关（UnifiedRootOptimizer enforce）----
+// 开关文件由本面板写、URO 每个策略边界热读；文件缺省/0 = 关（只 dry-run）
+const URO_CONF = '/sdcard/Android/UnifiedRootOptimizer/uro.conf'
+const uroOn = ref(false)
+const pendingU = ref(false)
+function toggleUro() {
+  if (!pendingU.value) { pendingU.value = true; return }
+  pendingU.value = false
+  emit('set-uro-bridge', !uroOn.value)
+}
+function cancelUro() { pendingU.value = false }
 
 // ---- 外观 ----
 const THEMES: { v: ThemeMode; label: string }[] = [
@@ -50,12 +62,14 @@ const ver = ref('…')
 onMounted(async () => {
   const b = detectBridge()
   if (!b) { dev.value = '无 KSU 桥'; ver.value = '?'; return }
-  const [v, d] = await Promise.all([
+  const [v, d, u] = await Promise.all([
     execRead(b, 'grep "^version=" /data/adb/modules/COSMemory/module.prop'),
     execRead(b, 'getprop ro.product.model; getprop ro.build.display.id; uname -r'),
+    execRead(b, `grep '^BRIDGE_ENFORCE=' ${URO_CONF} 2>/dev/null`),
   ])
   ver.value = v.split('=')[1]?.trim() || '?'
   dev.value = d.trim().split('\n').filter(Boolean).join(' · ') || '—'
+  uroOn.value = /BRIDGE_ENFORCE=1/.test(u)
 })
 </script>
 
@@ -106,6 +120,28 @@ onMounted(async () => {
           class="st-seg-b" :class="{ on: raDepth === d[0] }" @click="pickDepth(d[0])">{{ d[1] }}</button>
       </div>
       <div class="meta" style="width:100%; margin-top:6px">{{ DEPTH_LABEL[raDepth]?.[1] }}</div>
+    </div>
+  </div>
+
+  <!-- 统一调度桥接 (UnifiedRootOptimizer) -->
+  <div class="sec"><div class="b"><svg class="si" viewBox="0 0 24 24"><use href="#i-cpu-fill"/></svg></div><h2>统一调度桥接</h2></div>
+  <div class="card st-mode">
+    <div class="st-mode-row">
+      <div>
+        <div class="name">{{ uroOn ? 'URO 场景接管 · 开' : 'URO 场景接管 · 关' }}</div>
+        <div class="meta">
+          {{ uroOn
+            ? '由 UnifiedRootOptimizer 按场景自动调本页回收策略：游戏时自动暂停让权、内存压力/省电时自动开启；此时手改回收开关会在下个场景被覆盖'
+            : '关闭时回收策略完全由本页手动控制（推荐保持关闭，除非已安装 URO）' }}
+        </div>
+      </div>
+      <button class="st-switch" :class="{ on: uroOn }" @click="toggleUro">
+        <i /><span v-if="pendingU" class="st-confirm">确认?</span>
+      </button>
+    </div>
+    <div v-if="pendingU" class="st-hint">
+      {{ uroOn ? '关闭后 URO 不再写入本页回收策略（下次策略事件生效）。' : '开启后 URO 将按场景自动写入本配置，可随时关闭。' }}
+      <button class="st-cancel" @click="cancelUro">取消</button>
     </div>
   </div>
 
