@@ -16,6 +16,12 @@ apply_actions() {
       case "$cur" in (*"$pkg"*) ;; (*) fa=$((fa+1)); fx=$((fx+1)); continue;; esac
       before=$(cat /proc/$pid/oom_score_adj 2>/dev/null)
       [ "$before" = "$tgt" ] && continue
+      # v1.2.0 只降不抬: 当前 adj 已不高于目标(已更受保护) → 跳过,
+      # 防止 prev/svc/svcb 扩覆盖后把绑定前台的低 adj 进程反向抬高成可杀水位
+      case "$before" in
+        ''|*[!0-9-]*) : ;;
+        *) [ "$before" -le "$tgt" ] 2>/dev/null && continue ;;
+      esac
       [ -f "$2/adj_$pid" ] || echo "orig=$before pkg=$pkg" > "$2/adj_$pid"
       if ! echo "$tgt" > /proc/$pid/oom_score_adj 2>/dev/null; then
         fa=$((fa+1)); fw=$((fw+1)); continue

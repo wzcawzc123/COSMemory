@@ -1,5 +1,11 @@
 # 【更新日志】
 
+## v1.2.0 2026.10.09 (保活覆盖面扩展: prev\/svc\/svcb 裸奔窗口修复)
+- **修: 白名单保活偶发失效 (覆盖缺口)** — 5h43m 日用日志取证: 白名单死亡 23 例中 **16 例发生在 prev(10,死时 adj=700)\/svcb(6) 态**, 均在引擎保活范围(`cch*`)之外, 即"进程从前台退回 prev 到落入 cch 之间"的裸奔窗口被系统收走。`plan_keepalive` 覆盖扩为 `cch*|prev*|svc|svcb`; fg\/vis\/prcp 仍不纳入(系统已高优)
+- **加: exec.sh「只降不抬」守卫** — KEEPADJ 仅在当前 adj **高于**目标时写入; 防止 prev\/svc\/svcb 扩覆盖后, 把绑定前台的低 adj 进程(如 svcb 绑 fg 可为 0)反向抬到 200 可杀水位。语义自此定型: **保活 = 只降低 adj, 永不抬高**
+- **调: 巡检节奏自适应** (`FAST_SLEEP=1`/`IDLE_SLEEP=2`/`FULL_SLEEP=2` 可覆盖) — 本轮有 KEEPADJ 纠正或 KILL(AMS 正在覆写=活跃期) → 下轮 1s 快轮缩窗; 平静期回 2s 基线。决策依据=新旧引擎 40s 同台 A/B: **每轮成本 213→236ms(+10%, 本补丁开销可忽略), 但全程 1s 使引擎 CPU 8.5%→18.9% 翻倍**, 故只在战斗期付费; 纠正间隔活跃期均值 ~2.2s→~1.1s, full 轮后最差 8.5s→2.5s
+- 测试: test_policy 6→9 断言(prev\/svcb 覆盖 + 非白名单不误保), exec\/exec3 同步守卫语义(基线改 500、抬高用例改为跳过断言), 全套 13 件 total_fail=0
+
 ## v1.1.5 2026.10.05 (稳定性: 开机名单竞态根因修复)
 - **修: 开机后防线偶发 no-white 降级 (根因级)** — 日用 5 天日志取证: 10-04 六次 `config ERROR no-white` 中四次精确对应重启 (`SHUTDOWN 20:41:43 → no-white 20:42:42` 等), 同窗口 `LISTRESYNC fail cp: /sdcard/... No such file or directory`。根因: `/sdcard`(FUSE) 就绪晚于 `boot_completed`, 名单读不到 → `parse_lists` 无输出 → `guard_bridge` 仍写出**无 WHITE 行的桥**覆盖好桥 → COSGuard 判 no-white 降级 observe, 拦截空窗至下一轮
 - **修: guard_bridge 名单不可读时保留旧桥** — 新增 `engine/lists.sh::load_lists()` (读失败返回 1 且不污染既有变量); 桥写入前先 `load_lists`, 失败 `return 1` 不覆盖, service.sh 记一行 `BRIDGE_SKIP`(带 30s 循环限流)

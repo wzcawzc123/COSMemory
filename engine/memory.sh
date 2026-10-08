@@ -9,6 +9,10 @@ MODDIR=$(dirname "$0")/..
 WORKDIR="${WORKDIR:-$MODDIR/data}"
 STATS_LOG="${STATS_LOG:-$WORKDIR/stats.log}"; export STATS_LOG
 KEEPADJ_TARGET="${KEEPADJ_TARGET:-200}"; MAX_KILL="${MAX_KILL:-5}"
+# v1.2.0 巡检节奏(自适应): 快轮1s/平静轮2s/full轮后2s — A/B实测每轮成本213→236ms(+10%),
+# 全程1s会使引擎CPU翻倍(8.5%→18.9%); 改为仅当本轮有 KEEPADJ/KILL 写入(AMS 正在覆写=活跃期)
+# 用 1s 缩窗, 平静期回 2s 基线 — 窗口收窄只在真正需要时付费
+FAST_SLEEP="${FAST_SLEEP:-1}"; IDLE_SLEEP="${IDLE_SLEEP:-2}"; FULL_SLEEP="${FULL_SLEEP:-2}"
 BRIDGE_PATH="${BRIDGE_PATH:-/data/system/cosmem/guard.conf}"
 TELEM_PATH="${TELEM_PATH:-/data/system/cosmem/guard.telemetry}"
 mkdir -p "$WORKDIR/cool"; date +%s > "$WORKDIR/engine.started"; cap_probe; . "$WORKDIR/caps.conf"
@@ -88,12 +92,17 @@ reclaim_cycle() {
 
   reclaim_cycle
   grep '^KILL ' "$WORKDIR/acts" | while read -r _ pid _; do date +%s > "$WORKDIR/cool/$pid"; done
-  apply_actions "$WORKDIR/acts" "$WORKDIR/state" >> "$STATS_LOG"
+  AP_RES=$(apply_actions "$WORKDIR/acts" "$WORKDIR/state")
+  echo "$AP_RES" >> "$STATS_LOG"
+  # 自适应节奏: 本轮有 KEEPADJ 纠正或 KILL(AMS 正在覆写=活跃期) → 下轮快轮1s; 平静 → 2s
+  hot=0; case "$AP_RES" in *"APPLIED=0 KILLED=0"*) : ;; *) hot=1 ;; esac
   grep '^RECLAIM ' "$WORKDIR/acts" 2>/dev/null | while read -r _ pid_r pkg_r; do
     echo "$(date +%s)|$pid_r|$pkg_r||RECLAIM|${R_MODE:-aggressive} depth=${R_DEPTH:-cached}" >> "$TELEM_PATH"
   done
   FRZ=$(freeze_reap "$BRIDGE_PATH" $FREEZE_LIST 2>/dev/null)
   [ -n "$FRZ" ] && echo "$FRZ" >> "$TELEM_PATH" 2>/dev/null
   [ "$full" = 1 ] && capture_kills "$WHITE_LIST"
-  [ "$full" = 1 ] && sleep 8 || sleep 2
+  if [ "$full" = 1 ]; then sleep "$FULL_SLEEP"
+  elif [ "$hot" = 1 ]; then sleep "$FAST_SLEEP"
+  else sleep "$IDLE_SLEEP"; fi
 done

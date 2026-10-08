@@ -10,10 +10,12 @@ is_protected() {
 
 plan_keepalive() {
   # $1=快照文件 $2=WHITE_LIST $3=target_adj
-  # 白名单包 + 已退后台(cch*) → KEEPADJ; WHITE 无后缀时匹配整包及其子进程
+  # 白名单包 + 退后台各态(cch/prev/svc/svcb) → KEEPADJ; WHITE 无后缀时匹配整包及其子进程
+  # v1.2.0: 日用日志 16/23 白名单死亡发生在 prev/svcb 态(死时 adj 700/905), 原 cch* 独覆盖有裸奔窗口;
+  #         fg/vis/prcp 仍不纳入(系统已高优), exec.sh「只降不抬」守卫兜底防绑定态低 adj 被反向抬高
   while IFS='|' read -r state proc pid pkg; do
     [ -z "$pkg" ] && continue
-    case "$state" in cch*) ;; *) continue;; esac
+    case "$state" in cch*|prev*|svc|svcb) ;; *) continue;; esac
     matched=0
     for w in $2; do
       [ "$matched" = 1 ] && break
