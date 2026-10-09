@@ -73,11 +73,11 @@ KernelSU 管理器 → 模块详情 → 打开，五个区块：
 
 **Magisk**：App → 模块 → 从本地安装（理论兼容，暂无实机验证）→ 重启
 
-**防线组件 COSGuard（LSPosed）** —— zip 的 `assets/` 内附 APK，缺它只有被动保活，防线拦截不生效：
+**防线组件 COSGuard（LSPosed）** —— zip 的 `lsp/` 内附 APK，缺它只有被动保活，防线拦截不生效：
 
-1. 解压 zip，安装 `assets/COSGuard-vX.X.apk`
-2. LSPosed 管理器 → 模块 → 勾选 COSGuard，作用域勾「系统框架」
-3. 重启；LSPosed 日志出现 `COSGuard loaded` 即生效
+1. 安装 zip 时自动安装（customize.sh 自动 `pm install`；失败再手动：解压 zip 装 `lsp/COSGuard-vX.X.apk`）
+2. LSPosed 管理器 → 模块 → 勾选 COSGuard，作用域勾「**系统框架 + 雅典娜（com.oplus.athena）**」（右上角菜单「勾选推荐」一步到位）
+3. 重启；LSPosed 日志出现 `COSGuard loaded` 与 `athena kill hooks installed: 2` 即全量生效
 
 安装后：
 
@@ -136,6 +136,7 @@ FREEZE com.bloat.app
 > v0.4.0 起内置。观察模式 21.6h 收数通过（134 条判定零异常、白名单全程保活），已切换拦截模式日用。
 
 **架构**：名单/memory.json → `service.sh` 生成配置桥 `/data/system/cosmem/guard.conf`（system 可读写）→ **COSGuard**（LSPosed，驻 system_server）快照缓存桥配置（5s mtime 热加载），hook `ProcessRecord.killLocked` 执行决策链（MODE→WHITE→BLOCK→FUSE→SKIP）→ 遥测 `guard.telemetry` → `service.sh` 按天归档 → `guard_stats.sh` 聚合 → WebUI「防线」页。单一事实源在 COSMemory 侧；桥缺失/解析失败一律 **fail-open（只记不拦）**。
+**B-track（v1.2.0 起）**：ColorOS 深度清理（雅典娜 deep_clear）在 system_server 内以 `Process.killProcess/Group` 直杀、不过 killLocked 闸门 → COSGuard 另钩这两入口（作用域含 `com.oplus.athena`），reason=`athena o-kill` 走同一决策链；`block_rules` 需含 `athena`（出厂默认已含）。
 
 **guard.conf 字段**：
 
@@ -223,7 +224,7 @@ adj 自动还原、配置自动清理；**自定义名单会一并删除**，要
 |---|---|
 | 面板打不开 \? 长时间空白 | ① 入口走 KSU 模块页「打开」 ② 约 1 秒灰色过渡 = KSU 容器初始化, 属正常 ③ 超 3 秒仍空白 → force-stop KSU 重开 ④ 截图反馈 |
 | 按钮 \? 日期切换没反应 | ① 底部是否弹绿色 toast ② 日期按钮文字是否随选择变化 ③ 无变化 → 重开面板, 仍复现截图反馈 |
-| 「防线」显示未生效 | ① LSPosed 已启用 COSGuard ② 作用域勾了「系统框架」 ③ 重启后 LSPosed 日志有 `COSGuard loaded, killLocked hooks=3` ④ COSGuard APK 已装（zip 的 `assets/` 内） |
+| 「防线」显示未生效 | ① LSPosed 已启用 COSGuard ② 作用域含「系统框架 + 雅典娜」③ 重启后 LSPosed 日志有 `COSGuard loaded, killLocked hooks=3` 与 `athena kill hooks installed: 2` ④ COSGuard APK 已装（zip 的 `lsp/` 内，安装时自动装） |
 | 白名单 App 仍被杀 | ① 名单快照里该 App 是否 `adj 200` ② 面板异常区有无「白名单死亡」 ③ `data/stats.log` 对照时间点 |
 | 一直没有任何回收 | 预期行为——出厂保守（KILL 空、激进回收关）。想清后台：设置页开激进回收，或加 KILL 条目（逐条自测） |
 | 面板改了名单没反应 | 名单页立即刷新、防线 hook ≤5 秒、引擎 ≤30 秒一轮；超时 → 重开面板刷新，仍不行看异常区「白名单拦截」计数 |

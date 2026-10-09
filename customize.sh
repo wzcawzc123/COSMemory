@@ -34,13 +34,18 @@ ui_print "- 名单对齐: $(sed -n 's/^RESYNC=//p' "$MODPATH/data/.listresync" 2
 set_perm_recursive "$MODPATH" 0 0 0755 0755
 
 # 3) COSGuard APK 自动安装 (防线组件) — 失败不阻断, 提示手动安装
-APK=$(ls "$MODPATH"/assets/COSGuard-*.apk 2>/dev/null | head -1)
-if [ -n "$APK" ]; then
-  if pm install -r "$APK" >/dev/null 2>&1; then
-    ui_print "- COSGuard 已自动安装. 请到 LSPosed 启用并勾选作用域「系统框架」"
+#    v1.2.1: 路径优先规范位 lsp/<模块名>-<版本>.apk, 兼容历史 assets/ 布局; 遍历全部
+APK_FOUND=""
+for APK in $(ls "$MODPATH"/lsp/COSGuard*.apk "$MODPATH"/assets/COSGuard-*.apk 2>/dev/null); do
+  if pm install -r "$APK" > /dev/null 2>&1; then
+    APK_FOUND=1
+    ui_print "- COSGuard 已自动安装: $(basename "$APK")"
   else
-    ui_print "! COSGuard 自动安装失败, 请手动安装: 解压 assets/ 内 APK"
+    ui_print "! COSGuard 自动安装失败(可能已装同/高版本): $(basename "$APK")"
   fi
-fi
+done
+[ -n "$APK_FOUND" ] \
+  && ui_print "- 请到 LSPosed 启用本模块并按 README 勾选作用域" \
+  || ui_print "! 未找到 COSGuard APK, 防线拦截不生效, 请手动安装 zip 内 lsp/ 的 APK"
 
 ui_print "- COSMemory 已安装. 名单: $OUTDIR/名单列表.conf"
