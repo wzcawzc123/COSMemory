@@ -13,7 +13,7 @@ guard_bridge() {
   fi
   case "$fzline" in *true*) fze=1;; *) fze=0;; esac
   [ "$mode" = guard ] || mode=observe
-  [ -n "$block" ] || block=o-stop,frozen,cached,empty,cpu
+  [ -n "$block" ] || block=o-stop,frozen,cached,empty,cpu,athena
   # 名单暂不可读(开机 /sdcard FUSE 晚于 boot_completed 就绪)时保留旧桥不覆盖 —
   # 否则会写出无 WHITE 行的桥 → COSGuard no-white 降级 (2026-10-05 根因修复)
   load_lists "${LIST_PATH:-/sdcard/Android/COSMemory/名单列表.conf}" || return 1

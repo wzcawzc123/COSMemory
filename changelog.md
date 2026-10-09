@@ -1,5 +1,10 @@
 # 【更新日志】
 
+## v1.2.1 2026.10.09 (联动: B-track 雅典娜深清拦截规则入桥)
+- **增: block_rules + `athena`** — 配合 COSGuard v1.2.0 B-track（钩 Athena 进程内 `Process.killProcess` 拦 deep_clear 直杀）。`memory.json::block_rules` 与 `engine/bridge.sh` 兜底名单均增 `athena`；guard.conf 随 30s 桥循环自动再生，无需重启引擎
+- **docs: `spike-athena-deepclear-report.md`** — 夜间死亡 am_kill 归因（6例=2深清+4自杀+0标准杀）、Athena 杀链源码级结论（不经 OomAdjuster 闸门）、配置面情报（force_protected_list/深清开关/本地 XML version 压云端）、B-track 设计与验收判据
+- 背景: v1.2.0 首夜日用 — 443 KEEPADJ 零失败, 自适应节奏战斗/平静切换正常, 白名单死亡 23例/5.7h(前夜) → 6例/4.6h
+
 ## v1.2.0 2026.10.09 (保活覆盖面扩展: prev\/svc\/svcb 裸奔窗口修复)
 - **修: 白名单保活偶发失效 (覆盖缺口)** — 5h43m 日用日志取证: 白名单死亡 23 例中 **16 例发生在 prev(10,死时 adj=700)\/svcb(6) 态**, 均在引擎保活范围(`cch*`)之外, 即"进程从前台退回 prev 到落入 cch 之间"的裸奔窗口被系统收走。`plan_keepalive` 覆盖扩为 `cch*|prev*|svc|svcb`; fg\/vis\/prcp 仍不纳入(系统已高优)
 - **加: exec.sh「只降不抬」守卫** — KEEPADJ 仅在当前 adj **高于**目标时写入; 防止 prev\/svc\/svcb 扩覆盖后, 把绑定前台的低 adj 进程(如 svcb 绑 fg 可为 0)反向抬到 200 可杀水位。语义自此定型: **保活 = 只降低 adj, 永不抬高**
